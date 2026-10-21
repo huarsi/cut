@@ -1,0 +1,14 @@
+# Postgres local para desarrollo. En producción usa Neon (DATABASE_URL en Vercel).
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: cut
+      POSTGRES_PASSWORD: cut
+      POSTGRES_DB: cut
+    ports:
+      - "5433:5432"
+    volumes:
+      - cut-db:/var/lib/postgresql/data
+volumes:
+  cut-db:

@@ -1,65 +1,71 @@
-import Image from "next/image";
+import { redirect } from "next/navigation";
+import { CutDemo } from "@/components/cut-demo";
+import { Header } from "@/components/header";
+import { Scissors } from "@/components/icons";
+import { getSession } from "@/lib/auth";
 
-export default function Home() {
+export default async function Home({ searchParams }: PageProps<"/">) {
+  const { missing } = await searchParams;
+  const session = await getSession();
+  if (session && !missing) redirect("/dashboard");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <>
+      <Header />
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 pt-16 pb-24 sm:px-6 sm:pt-28">
+        {missing && (
+          <p className="mb-8 rounded-full border border-line bg-card px-4 py-1.5 text-sm text-muted">
+            El link <span className="font-mono text-fg">/{missing}</span> no existe o fue borrado.
           </p>
+        )}
+
+        <h1 className="text-center text-5xl font-semibold tracking-tight text-balance sm:text-7xl">
+          Links largos,
+          <br />
+          <span className="text-muted">cortados</span>
+          <span className="text-accent">.</span>
+        </h1>
+        <p className="mt-5 max-w-md text-center text-lg text-muted text-balance">
+          Acorta, comparte y mide tus links. O genéralos desde tu código con una API.
+        </p>
+
+        {/* Sin sesión, el dashboard manda a login y regresa con la URL ya escrita. */}
+        <form action="/dashboard" className="mt-10 flex w-full max-w-xl gap-2">
+          <input
+            name="url"
+            required
+            autoComplete="off"
+            placeholder="Pega un link largo…"
+            className="input h-13 flex-1 rounded-2xl text-base"
+          />
+          <button className="btn-primary h-13 rounded-2xl px-5" aria-label="Acortar">
+            <Scissors />
+            <span className="hidden sm:inline">Cortar</span>
+          </button>
+        </form>
+
+        <div className="mt-14 w-full max-w-xl">
+          <CutDemo />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <section className="mt-24 grid w-full gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+          <Feature title="Tu cuenta, tus links" text="Entra con email, GitHub o Google y administra todo en un solo lugar." />
+          <Feature title="Clics en tiempo real" text="Cada link cuenta sus visitas y te dice cuándo fue la última." />
+          <Feature title="API para automatizar" text="Crea llaves y genera links desde cualquier script con un POST." />
+        </section>
       </main>
+      <footer className="py-8 text-center text-sm text-muted">
+        cut<span className="text-accent">.</span> — hecho para compartir menos caracteres.
+      </footer>
+    </>
+  );
+}
+
+function Feature({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="bg-card p-6">
+      <h3 className="font-medium">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted">{text}</p>
     </div>
   );
 }

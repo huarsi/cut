@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# cut.
 
-## Getting Started
+Acortador de links con cuentas de usuario, conteo de clics y API REST con llaves.
 
-First, run the development server:
+**Stack:** Next.js 16 · Tailwind 4 · Better Auth · Drizzle + Postgres (Neon) · Motion
+
+## Desarrollo local
 
 ```bash
+cp .env.example .env          # y llena BETTER_AUTH_SECRET (openssl rand -base64 32)
+docker compose up -d          # Postgres local en el puerto 5433
+npm run db:migrate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Si cambias `src/db/schema.ts`, genera la migración con `npm run db:generate` y súbela junto con el cambio.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy en Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Importa el repo en Vercel.
+2. En **Storage → Marketplace**, conecta **Neon**. Eso crea `DATABASE_URL` (usa la cadena *pooled*).
+3. Agrega estas variables de entorno:
+   - `BETTER_AUTH_SECRET`: `openssl rand -base64 32`
+   - `BETTER_AUTH_URL`: tu dominio público, por ejemplo `https://cut.to`. Se usa también para armar los links cortos.
+4. Despliega. El build corre `drizzle-kit migrate` antes de `next build`, así que las tablas se crean solas.
 
-## Learn More
+### Login con GitHub o Google (opcional)
 
-To learn more about Next.js, take a look at the following resources:
+Los botones solo aparecen si sus variables están definidas.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Proveedor | Variables | Callback URL |
+| --- | --- | --- |
+| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `https://TU_DOMINIO/api/auth/callback/github` |
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `https://TU_DOMINIO/api/auth/callback/google` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API
 
-## Deploy on Vercel
+Crea una llave en `/dashboard/keys`. La documentación completa está en `/docs`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+curl -X POST https://TU_DOMINIO/api/v1/links \
+  -H "Authorization: Bearer $CUT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/un/link/largo", "slug": "promo"}'
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Método | Ruta | Qué hace |
+| --- | --- | --- |
+| `POST` | `/api/v1/links` | Crea un link (`url`, `slug` opcional) |
+| `GET` | `/api/v1/links?limit=50` | Lista tus links |
+| `GET` | `/api/v1/links/:slug` | Consulta un link y sus clics |
+| `DELETE` | `/api/v1/links/:slug` | Borra un link |
+
+## Estructura
+
+```
+src/
+  app/
+    [slug]/route.ts         redirección + conteo de clics
+    api/v1/links/           API REST
+    api/auth/[...all]/      Better Auth
+    dashboard/              panel de links y llaves (server actions en actions.ts)
+    docs/  login/
+  db/schema.ts              tablas (auth + link + api_key)
+  lib/links.ts              validación de URLs, slugs y CRUD
+  lib/api-keys.ts           llaves: se guarda solo el hash SHA-256
+```
