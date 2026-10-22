@@ -20,7 +20,7 @@ Si cambias `src/db/schema.ts`, genera la migración con `npm run db:generate` y 
 1. Importa el repo en Vercel y agrega `BETTER_AUTH_SECRET` (`openssl rand -base64 32`). El primer deploy falla porque aún no hay base de datos; es normal.
 2. En el proyecto, **Storage → Create Database → Neon** y conéctala. Eso crea `DATABASE_URL`.
 3. **Deployments → ⋯ → Redeploy.** El build corre `drizzle-kit migrate` antes de `next build`, así que las tablas se crean solas.
-4. Cuando conectes un dominio propio, define `BETTER_AUTH_URL` con él (por ejemplo `https://cut.to`) y vuelve a desplegar. Sin ella se usa el dominio `*.vercel.app` de producción, también para armar los links cortos.
+4. Cuando conectes un dominio propio, define `BETTER_AUTH_URL` con él (`https://cut.lat`) y vuelve a desplegar. Sin ella se usa el dominio `*.vercel.app` de producción, también para armar los links cortos.
 
 ### Login con GitHub o Google (opcional)
 
@@ -28,15 +28,15 @@ Los botones solo aparecen si sus variables están definidas.
 
 | Proveedor | Variables | Callback URL |
 | --- | --- | --- |
-| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `https://TU_DOMINIO/api/auth/callback/github` |
-| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `https://TU_DOMINIO/api/auth/callback/google` |
+| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `https://cut.lat/api/auth/callback/github` |
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `https://cut.lat/api/auth/callback/google` |
 
 ## API
 
 Crea una llave en `/dashboard/keys`. La documentación completa está en `/docs`.
 
 ```bash
-curl -X POST https://TU_DOMINIO/api/v1/links \
+curl -X POST https://cut.lat/api/v1/links \
   -H "Authorization: Bearer $CUT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com/un/link/largo", "slug": "promo"}'

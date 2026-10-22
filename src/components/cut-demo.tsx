@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { CutAnimation } from "./cut-animation";
 
 const EXAMPLES = [
-  ["https://www.example.com/blog/2026/10/como-escribir-urls-que-nadie-quiere-copiar", "cut.to/k3Rp9"],
-  ["https://docs.google.com/spreadsheets/d/1a2B3c4D5e6F7g8H9i0J/edit#gid=0", "cut.to/q2026"],
-  ["https://shop.example.mx/productos/audifonos-inalambricos?utm_source=newsletter", "cut.to/sale"],
+  ["https://www.example.com/blog/2026/10/como-escribir-urls-que-nadie-quiere-copiar", "cut.lat/k3Rp9"],
+  ["https://docs.google.com/spreadsheets/d/1a2B3c4D5e6F7g8H9i0J/edit#gid=0", "cut.lat/q2026"],
+  ["https://shop.example.mx/productos/audifonos-inalambricos?utm_source=newsletter", "cut.lat/sale"],
 ] as const;
 
 /** Bucle decorativo del landing: corta un link de ejemplo cada pocos segundos. */
