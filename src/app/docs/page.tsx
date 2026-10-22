@@ -18,7 +18,7 @@ export default async function DocsPage() {
 
   return (
     <>
-      <Header narrow />
+      <Header />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14">
         <h1 className="text-3xl font-semibold tracking-tight">
           API<span className="text-accent">.</span>
