@@ -3,8 +3,10 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { Check, Copy } from "./icons";
+import { useT } from "./preferences";
 
 export function CopyButton({ value, className = "" }: { value: string; className?: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   async function copy() {
@@ -17,7 +19,7 @@ export function CopyButton({ value, className = "" }: { value: string; className
     <button
       type="button"
       onClick={copy}
-      aria-label={copied ? "Copiado" : "Copiar"}
+      aria-label={copied ? t.form.copied : t.form.copy}
       className={`relative grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-fg/5 hover:text-fg ${className}`}
     >
       <AnimatePresence mode="popLayout" initial={false}>

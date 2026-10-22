@@ -1,17 +1,19 @@
 import { z } from "zod";
 import { apiError, withApiKey } from "@/lib/api";
 import { createLink, listLinks, serializeLink } from "@/lib/links";
+import { SLUG_LENGTH } from "@/lib/slug";
 
 const createSchema = z.object({
   url: z.string().min(1).max(2048),
   slug: z.string().optional().nullable(),
+  length: z.number().int().min(SLUG_LENGTH.min).max(SLUG_LENGTH.max).optional(),
 });
 
 export const POST = withApiKey(async (request, userId) => {
   const body = createSchema.safeParse(await request.json().catch(() => null));
-  if (!body.success) return apiError(400, 'El cuerpo debe ser JSON: { "url": "https://…", "slug"?: "alias" }');
+  if (!body.success) return apiError(400, "badBody");
 
-  const created = await createLink({ userId }, body.data.url, body.data.slug);
+  const created = await createLink({ userId }, body.data.url, body.data.slug, body.data.length);
   return Response.json(serializeLink(created), { status: 201 });
 });
 

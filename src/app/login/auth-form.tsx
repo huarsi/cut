@@ -4,7 +4,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GitHub, Google } from "@/components/icons";
+import { useT } from "@/components/preferences";
 import { UsernameField } from "@/components/username-field";
+import type { Dictionary } from "@/i18n/dictionaries";
 import { authClient } from "@/lib/auth-client";
 
 export type Mode = "signin" | "signup";
@@ -18,6 +20,7 @@ export function AuthForm({
   providers: { github: boolean; google: boolean };
   initialMode?: Mode;
 }) {
+  const t = useT();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [username, setUsername] = useState("");
@@ -36,7 +39,7 @@ export function AuthForm({
       : signIn(String(form.get("identifier")).trim(), password));
     setPending(false);
 
-    if (error) return setError(translateError(error.code, error.message));
+    if (error) return setError(translateError(error.code, t.auth.errors));
     router.push(next);
     router.refresh();
   }
@@ -66,7 +69,7 @@ export function AuthForm({
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
               />
             )}
-            <span className="relative">{m === "signin" ? "Entrar" : "Crear cuenta"}</span>
+            <span className="relative">{m === "signin" ? t.auth.signIn : t.auth.signUp}</span>
           </button>
         ))}
       </div>
@@ -75,7 +78,7 @@ export function AuthForm({
         {mode === "signup" ? (
           <motion.div key="signup" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
             <UsernameField value={username} onChange={setUsername} />
-            <input name="email" type="email" required placeholder="Email" autoComplete="email" className="input" />
+            <input name="email" type="email" required placeholder={t.auth.email} autoComplete="email" className="input" />
           </motion.div>
         ) : (
           <motion.input
@@ -84,7 +87,7 @@ export function AuthForm({
             animate={{ opacity: 1, y: 0 }}
             name="identifier"
             required
-            placeholder="Email o usuario"
+            placeholder={t.auth.identifier}
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
@@ -96,7 +99,7 @@ export function AuthForm({
           type="password"
           required
           minLength={8}
-          placeholder="Contraseña"
+          placeholder={t.auth.password}
           autoComplete={mode === "signin" ? "current-password" : "new-password"}
           className="input"
         />
@@ -107,7 +110,7 @@ export function AuthForm({
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="text-sm text-accent"
+              className="text-sm text-danger"
             >
               {error}
             </motion.p>
@@ -115,24 +118,26 @@ export function AuthForm({
         </AnimatePresence>
 
         <button disabled={pending} className="btn-primary mt-1">
-          {pending ? "Un momento…" : mode === "signin" ? "Entrar" : "Crear cuenta"}
+          {pending ? t.auth.wait : mode === "signin" ? t.auth.signIn : t.auth.signUp}
         </button>
       </form>
 
       {(providers.github || providers.google) && (
         <>
           <div className="my-6 flex items-center gap-3 text-xs text-muted">
-            <span className="h-px flex-1 bg-line" />o<span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" />
+            {t.auth.or}
+            <span className="h-px flex-1 bg-line" />
           </div>
           <div className="flex flex-col gap-2">
             {providers.github && (
               <button type="button" onClick={() => social("github")} className="btn-ghost">
-                <GitHub /> Continuar con GitHub
+                <GitHub /> {t.auth.github}
               </button>
             )}
             {providers.google && (
               <button type="button" onClick={() => social("google")} className="btn-ghost">
-                <Google /> Continuar con Google
+                <Google /> {t.auth.google}
               </button>
             )}
           </div>
@@ -149,23 +154,23 @@ function signIn(identifier: string, password: string) {
     : authClient.signIn.username({ username: identifier, password });
 }
 
-function translateError(code: string | undefined, fallback: string | undefined) {
+function translateError(code: string | undefined, errors: Dictionary["auth"]["errors"]) {
   switch (code) {
     case "INVALID_EMAIL_OR_PASSWORD":
     case "INVALID_USERNAME_OR_PASSWORD":
-      return "Usuario, email o contraseña incorrectos.";
+      return errors.invalidCredentials;
     case "USERNAME_IS_ALREADY_TAKEN":
-      return "Ese usuario ya está ocupado.";
+      return errors.usernameTaken;
     case "USERNAME_TOO_SHORT":
     case "USERNAME_TOO_LONG":
     case "INVALID_USERNAME":
-      return "El usuario debe tener de 3 a 30 caracteres: letras, números, _ o punto.";
+      return errors.usernameInvalid;
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
-      return "Ya existe una cuenta con ese email.";
+      return errors.userExists;
     case "PASSWORD_TOO_SHORT":
-      return "La contraseña debe tener al menos 8 caracteres.";
+      return errors.passwordShort;
     default:
-      return fallback ?? "Algo salió mal. Intenta de nuevo.";
+      return errors.generic;
   }
 }

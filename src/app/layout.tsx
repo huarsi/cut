@@ -1,19 +1,32 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { PreferencesProvider } from "@/components/preferences";
+import { getLocale, getT } from "@/i18n/server";
+import { getTheme } from "@/lib/theme-server";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: { default: "cut. — links cortos", template: "%s · cut." },
-  description: "Acorta links, mide sus clics y genéralos desde tu código con la API.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: { default: t.meta.title, template: "%s · cut." }, description: t.meta.description };
+}
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [locale, theme] = await Promise.all([getLocale(), getTheme()]);
+
   return (
-    <html lang="es" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html
+      lang={locale}
+      data-theme={theme === "system" ? undefined : theme}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="flex min-h-full flex-col font-sans">
+        <PreferencesProvider locale={locale} theme={theme}>
+          {children}
+        </PreferencesProvider>
+      </body>
     </html>
   );
 }

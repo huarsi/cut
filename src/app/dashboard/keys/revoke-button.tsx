@@ -1,9 +1,11 @@
 "use client";
 
 import { useTransition } from "react";
+import { useT } from "@/components/preferences";
 import { revokeKeyAction } from "../actions";
 
 export function RevokeButton({ id, name }: { id: string; name: string }) {
+  const t = useT();
   const [pending, start] = useTransition();
 
   return (
@@ -11,13 +13,13 @@ export function RevokeButton({ id, name }: { id: string; name: string }) {
       type="button"
       disabled={pending}
       onClick={() => {
-        if (confirm(`¿Revocar “${name}”? Los scripts que la usen dejarán de funcionar.`)) {
+        if (confirm(t.keys.confirmRevoke(name))) {
           start(() => revokeKeyAction(id));
         }
       }}
-      className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-muted transition hover:bg-accent/10 hover:text-accent disabled:opacity-50"
+      className="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-muted transition hover:bg-danger/10 hover:text-danger disabled:opacity-50"
     >
-      {pending ? "Revocando…" : "Revocar"}
+      {pending ? t.keys.revoking : t.keys.revoke}
     </button>
   );
 }

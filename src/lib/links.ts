@@ -2,6 +2,9 @@ import { and, desc, eq } from "drizzle-orm";
 import { customAlphabet, nanoid } from "nanoid";
 import { db } from "@/db";
 import { link, type Link } from "@/db/schema";
+import type { Dictionary } from "@/i18n/dictionaries";
+import { getT } from "@/i18n/server";
+import { ALIAS_PATTERN, SLUG_LENGTH } from "@/lib/slug";
 
 export const baseUrl = (
   process.env.BETTER_AUTH_URL ??
@@ -11,6 +14,7 @@ export const baseUrl = (
 ).replace(/\/$/, "");
 
 export const shortUrl = (slug: string) => `${baseUrl}/${slug}`;
+export const shortHost = new URL(baseUrl).host;
 
 // Rutas de la app: un slug con estos nombres nunca se podría visitar.
 const RESERVED = new Set([
@@ -18,13 +22,15 @@ const RESERVED = new Set([
   "admin", "_next", "favicon.ico", "robots.txt", "sitemap.xml",
 ]);
 
-const SLUG_PATTERN = /^[a-zA-Z0-9_-]{3,50}$/;
 // 57 caracteres: sin los que se confunden al leer (0/O, 1/l/I).
-const randomSlug = customAlphabet("abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
+const randomSlug = customAlphabet("abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", SLUG_LENGTH.default);
 
+export type LinkErrorCode = keyof Dictionary["errors"];
+
+/** Error esperado al crear un link. El código se traduce donde se muestra (formulario o API). */
 export class LinkError extends Error {
-  constructor(message: string, public status: 400 | 404 | 409 | 429 = 400) {
-    super(message);
+  constructor(public code: LinkErrorCode, public status: 400 | 404 | 409 | 429 = 400) {
+    super(code);
   }
 }
 
@@ -34,16 +40,16 @@ function normalizeUrl(raw: string) {
   try {
     url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`);
   } catch {
-    throw new LinkError("Ese link no parece una URL válida.");
+    throw new LinkError("invalidUrl");
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    throw new LinkError("Solo se aceptan links http o https.");
+    throw new LinkError("onlyHttp");
   }
   if (!url.hostname.includes(".") && url.hostname !== "localhost") {
-    throw new LinkError("Ese link no parece una URL válida.");
+    throw new LinkError("invalidUrl");
   }
   if (url.host === new URL(baseUrl).host) {
-    throw new LinkError("Ese link ya es de cut.");
+    throw new LinkError("alreadyCut");
   }
   return url.toString();
 }
@@ -51,30 +57,33 @@ function normalizeUrl(raw: string) {
 /** Dueño de un link nuevo: un usuario, o un navegador sin cuenta. */
 export type LinkOwner = { userId: string } | { anonId: string; ipHash: string };
 
-export async function createLink(owner: LinkOwner, rawUrl: string, customSlug?: string | null) {
+export async function createLink(
+  owner: LinkOwner,
+  rawUrl: string,
+  customSlug?: string | null,
+  length: number = SLUG_LENGTH.default,
+) {
   const url = normalizeUrl(rawUrl);
   const wanted = customSlug?.trim();
 
   if (wanted) {
-    if (!SLUG_PATTERN.test(wanted)) {
-      throw new LinkError("El alias debe tener de 3 a 50 caracteres: letras, números, - o _.");
-    }
-    if (RESERVED.has(wanted.toLowerCase())) throw new LinkError("Ese alias está reservado.", 409);
+    if (!ALIAS_PATTERN.test(wanted)) throw new LinkError("slugFormat");
+    if (RESERVED.has(wanted.toLowerCase())) throw new LinkError("slugReserved", 409);
     const [created] = await db
       .insert(link)
       .values({ id: nanoid(), slug: wanted, url, ...owner })
       .onConflictDoNothing({ target: link.slug })
       .returning();
-    if (!created) throw new LinkError("Ese alias ya está ocupado.", 409);
+    if (!created) throw new LinkError("slugTaken", 409);
     return created;
   }
 
-  // 57^5 ≈ 600 millones de slugs. Si chocan cinco veces seguidas (la tabla ya está muy llena),
-  // los siguientes intentos usan 6 caracteres para no fallar nunca.
+  // Con 5 caracteres hay 57^5 ≈ 600 millones de slugs (con 3, apenas ~185 mil). Si chocan
+  // cinco veces seguidas porque ese largo ya está muy lleno, se prueba con un carácter más.
   for (let attempt = 0; attempt < 10; attempt++) {
     const [created] = await db
       .insert(link)
-      .values({ id: nanoid(), slug: randomSlug(attempt < 5 ? 5 : 6), url, ...owner })
+      .values({ id: nanoid(), slug: randomSlug(length + Math.floor(attempt / 5)), url, ...owner })
       .onConflictDoNothing({ target: link.slug })
       .returning();
     if (created) return created;
@@ -128,7 +137,7 @@ export async function toCreateLinkState(create: () => Promise<Link>): Promise<Cr
     // `at` hace que la animación se repita aunque se acorte el mismo link dos veces.
     return { ok: true, url: created.url, shortUrl: shortUrl(created.slug), at: Date.now() };
   } catch (error) {
-    if (error instanceof LinkError) return { ok: false, error: error.message };
+    if (error instanceof LinkError) return { ok: false, error: (await getT()).errors[error.code] };
     throw error;
   }
 }

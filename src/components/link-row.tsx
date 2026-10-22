@@ -6,6 +6,7 @@ import { CopyButton } from "@/components/copy-button";
 import { External, Trash } from "@/components/icons";
 import { displayUrl, timeAgo } from "@/lib/format";
 import { deleteLinkAction } from "@/app/dashboard/actions";
+import { usePreferences, useT } from "./preferences";
 
 type Props = {
   slug: string;
@@ -18,6 +19,8 @@ type Props = {
 };
 
 export function LinkRow({ slug, url, shortUrl, clicks, createdAt, deletable = true }: Props) {
+  const t = useT();
+  const { locale } = usePreferences();
   const [deleting, startDelete] = useTransition();
 
   return (
@@ -32,10 +35,10 @@ export function LinkRow({ slug, url, shortUrl, clicks, createdAt, deletable = tr
           href={shortUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 font-mono text-[15px] font-medium hover:text-accent"
+          className="inline-flex max-w-full items-center gap-1.5 font-mono text-[15px] font-medium hover:text-accent"
         >
-          {displayUrl(shortUrl)}
-          <External width={13} height={13} className="opacity-0 transition group-hover:opacity-60" />
+          <span className="truncate">{displayUrl(shortUrl)}</span>
+          <External width={13} height={13} className="shrink-0 opacity-0 transition group-hover:opacity-60" />
         </a>
         <p className="truncate text-sm text-muted" title={url}>
           {displayUrl(url)}
@@ -44,9 +47,12 @@ export function LinkRow({ slug, url, shortUrl, clicks, createdAt, deletable = tr
 
       <div className="hidden text-right text-sm sm:block">
         <p className="font-medium tabular-nums">
-          {clicks} <span className="font-normal text-muted">{clicks === 1 ? "clic" : "clics"}</span>
+          {clicks} <span className="font-normal text-muted">{t.link.clicks(clicks)}</span>
         </p>
-        <p className="text-xs text-muted">{timeAgo(createdAt)}</p>
+        {/* La hora relativa puede diferir unos segundos entre servidor y navegador. */}
+        <p className="text-xs text-muted" suppressHydrationWarning>
+          {timeAgo(createdAt, locale)}
+        </p>
       </div>
 
       <div className="flex items-center">
@@ -54,12 +60,12 @@ export function LinkRow({ slug, url, shortUrl, clicks, createdAt, deletable = tr
         {deletable && (
           <button
             type="button"
-            aria-label="Borrar"
+            aria-label={t.link.delete}
             disabled={deleting}
             onClick={() => {
-              if (confirm(`¿Borrar /${slug}? Dejará de redirigir.`)) startDelete(() => deleteLinkAction(slug));
+              if (confirm(t.link.confirmDelete(slug))) startDelete(() => deleteLinkAction(slug));
             }}
-            className="grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-accent/10 hover:text-accent"
+            className="grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-danger/10 hover:text-danger"
           >
             <Trash width={16} height={16} />
           </button>

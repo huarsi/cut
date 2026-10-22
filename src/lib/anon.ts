@@ -18,7 +18,7 @@ export async function currentAnonId() {
 }
 
 /** Crea un link sin cuenta. Solo se puede llamar desde una server action (escribe cookies). */
-export async function createAnonLink(rawUrl: string) {
+export async function createAnonLink(rawUrl: string, length: number) {
   const headerList = await headers();
   const ip =
     headerList.get("x-forwarded-for")?.split(",")[0].trim() ?? headerList.get("x-real-ip") ?? "local";
@@ -29,7 +29,7 @@ export async function createAnonLink(rawUrl: string) {
     .from(link)
     .where(and(eq(link.ipHash, ipHash), gt(link.createdAt, new Date(Date.now() - 3600_000))));
   if (recent >= MAX_LINKS_PER_HOUR) {
-    throw new LinkError("Llegaste al límite de links sin cuenta por ahora. Crea una cuenta gratis para seguir.", 429);
+    throw new LinkError("anonLimit", 429);
   }
 
   const cookieStore = await cookies();
@@ -45,7 +45,7 @@ export async function createAnonLink(rawUrl: string) {
     });
   }
 
-  return createLink({ anonId: hash(token), ipHash }, rawUrl);
+  return createLink({ anonId: hash(token), ipHash }, rawUrl, null, length);
 }
 
 const unclaimed = (anonId: string) => and(eq(link.anonId, anonId), isNull(link.userId));

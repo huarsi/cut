@@ -4,15 +4,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Check } from "./icons";
+import { useT } from "./preferences";
 
 export const USERNAME_PATTERN = /^[a-zA-Z0-9_.]{3,30}$/;
 
 type Status = "idle" | "checking" | "available" | "taken" | "invalid";
-
-const MESSAGES: Partial<Record<Status, string>> = {
-  taken: "Ese usuario ya está ocupado.",
-  invalid: "De 3 a 30 caracteres: letras, números, _ o punto.",
-};
 
 /** Input de usuario que revisa en vivo si está disponible. */
 export function UsernameField({
@@ -24,6 +20,8 @@ export function UsernameField({
   onChange: (value: string) => void;
   className?: string;
 }) {
+  const t = useT();
+  const messages: Partial<Record<Status, string>> = { taken: t.username.taken, invalid: t.username.invalid };
   const [checked, setChecked] = useState<{ value: string; available: boolean } | null>(null);
 
   useEffect(() => {
@@ -58,7 +56,7 @@ export function UsernameField({
           required
           value={value}
           onChange={(e) => onChange(e.target.value.trim())}
-          placeholder="usuario"
+          placeholder={t.username.placeholder}
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
@@ -94,15 +92,15 @@ export function UsernameField({
         </span>
       </div>
       <AnimatePresence initial={false}>
-        {MESSAGES[status] && (
+        {messages[status] && (
           <motion.p
             key={status}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden px-1 pt-1.5 text-xs text-accent"
+            className="overflow-hidden px-1 pt-1.5 text-xs text-danger"
           >
-            {MESSAGES[status]}
+            {messages[status]}
           </motion.p>
         )}
       </AnimatePresence>

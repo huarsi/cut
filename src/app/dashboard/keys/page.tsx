@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getLocale, getT } from "@/i18n/server";
 import { listApiKeys } from "@/lib/api-keys";
 import { requireUser } from "@/lib/auth";
 import { timeAgo } from "@/lib/format";
 import { CreateKeyForm } from "./create-key-form";
 import { RevokeButton } from "./revoke-button";
 
-export const metadata: Metadata = { title: "API" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).meta.keys };
+}
 
 export default async function KeysPage() {
   const user = await requireUser("/dashboard/keys");
-  const keys = await listApiKeys(user.id);
+  const [keys, t, locale] = await Promise.all([listApiKeys(user.id), getT(), getLocale()]);
 
   return (
     <>
@@ -18,9 +21,9 @@ export default async function KeysPage() {
         API<span className="text-accent">.</span>
       </h1>
       <p className="mt-1 text-muted">
-        Crea llaves para generar links desde tus scripts.{" "}
+        {t.keys.subtitle}{" "}
         <Link href="/docs" className="text-fg underline decoration-line underline-offset-4 hover:decoration-fg">
-          Ver documentación
+          {t.keys.docsLink}
         </Link>
       </p>
 
@@ -31,7 +34,7 @@ export default async function KeysPage() {
       <section className="mt-12">
         {keys.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-line px-6 py-14 text-center text-muted">
-            Sin llaves todavía.
+            {t.keys.empty}
           </div>
         ) : (
           <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
@@ -42,8 +45,8 @@ export default async function KeysPage() {
                   <p className="font-mono text-sm text-muted">{k.prefix}••••••••</p>
                 </div>
                 <div className="hidden text-right text-xs text-muted sm:block">
-                  <p>Creada {timeAgo(k.createdAt)}</p>
-                  <p>{k.lastUsedAt ? `Usada ${timeAgo(k.lastUsedAt)}` : "Nunca usada"}</p>
+                  <p>{t.keys.created(timeAgo(k.createdAt, locale))}</p>
+                  <p>{k.lastUsedAt ? t.keys.used(timeAgo(k.lastUsedAt, locale)) : t.keys.neverUsed}</p>
                 </div>
                 <RevokeButton id={k.id} name={k.name} />
               </li>

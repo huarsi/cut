@@ -4,7 +4,9 @@ Acortador de links con cuentas de usuario, conteo de clics y API REST con llaves
 
 - **Sin cuenta:** cualquiera puede acortar desde la landing (máximo 15 links por IP por hora). Los links quedan ligados a una cookie del navegador.
 - **Con cuenta:** registro con usuario y correo, login con cualquiera de los dos, alias personalizados y borrado. Al entrar, el panel ofrece pasar a tu cuenta los links que ese navegador creó sin cuenta; solo se mueven los que aún no tienen dueño.
+- **Largo del código:** al acortar se puede elegir de 3 a 7 caracteres después de la `/` (5 por defecto). Los alias personalizados aceptan hasta 100.
 - **API:** requiere cuenta; se usa con llaves que se crean en el panel.
+- **Temas e idiomas:** Sistema, Claro, Oscuro, Navy y Fun; español, inglés y portugués. Ambos se eligen en el menú del header y se guardan en cookies (`cut_theme`, `cut_lang`).
 
 **Stack:** Next.js 16 · Tailwind 4 · Better Auth · Drizzle + Postgres (Neon) · Motion
 
@@ -48,7 +50,7 @@ curl -X POST https://cut.lat/api/v1/links \
 
 | Método | Ruta | Qué hace |
 | --- | --- | --- |
-| `POST` | `/api/v1/links` | Crea un link (`url`, `slug` opcional) |
+| `POST` | `/api/v1/links` | Crea un link (`url`; opcionales `slug` o `length` de 3 a 7) |
 | `GET` | `/api/v1/links?limit=50` | Lista tus links |
 | `GET` | `/api/v1/links/:slug` | Consulta un link y sus clics |
 | `DELETE` | `/api/v1/links/:slug` | Borra un link |

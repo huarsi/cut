@@ -1,23 +1,67 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #fafaf9;
-  --fg: #0c0c0b;
-  --muted: #78716c;
-  --line: #e7e5e4;
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #fafafa;
+  --fg: #0a0a0a;
+  --muted: #737373;
+  --line: #e5e5e5;
   --card: #ffffff;
-  --accent: #ff4f2b;
+  --accent: #0a0a0a;
+  --accent-fg: #ffffff;
+  --danger: #dc2626;
 }
 
+/* "Sistema": sin data-theme, se sigue la preferencia del equipo. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b0a;
-    --fg: #f5f5f4;
-    --muted: #8f8a86;
-    --line: #262524;
-    --card: #131312;
-    --accent: #ff6a47;
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --fg: #fafafa;
+    --muted: #8a8a8a;
+    --line: #262626;
+    --card: #141414;
+    --accent: #fafafa;
+    --accent-fg: #0a0a0a;
+    --danger: #f87171;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --fg: #fafafa;
+  --muted: #8a8a8a;
+  --line: #262626;
+  --card: #141414;
+  --accent: #fafafa;
+  --accent-fg: #0a0a0a;
+  --danger: #f87171;
+}
+
+:root[data-theme="navy"] {
+  color-scheme: dark;
+  --bg: #0a1428;
+  --fg: #e6edf8;
+  --muted: #8b9bb8;
+  --line: #1d2b47;
+  --card: #0f1c36;
+  --accent: #5b9dff;
+  --accent-fg: #04101f;
+  --danger: #ff7b7b;
+}
+
+:root[data-theme="fun"] {
+  color-scheme: light;
+  --bg: #fff7ef;
+  --fg: #24160d;
+  --muted: #8f6f58;
+  --line: #f6dcc6;
+  --card: #ffffff;
+  --accent: #ff5a1f;
+  --accent-fg: #ffffff;
+  --danger: #d92d20;
 }
 
 @theme inline {
@@ -27,6 +71,8 @@
   --color-line: var(--line);
   --color-card: var(--card);
   --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -34,11 +80,14 @@
 body {
   background: var(--bg);
   color: var(--fg);
+  transition:
+    background-color 0.3s,
+    color 0.3s;
 }
 
 ::selection {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
 }
 
 /* Campo de texto y botones base, para no repetir clases en cada formulario. */

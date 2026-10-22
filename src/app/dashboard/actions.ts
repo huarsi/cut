@@ -5,11 +5,17 @@ import { claimAnonLinks, currentAnonId } from "@/lib/anon";
 import { createApiKey, revokeApiKey } from "@/lib/api-keys";
 import { requireUser } from "@/lib/auth";
 import { createLink, deleteLink, toCreateLinkState, type CreateLinkState } from "@/lib/links";
+import { parseSlugLength } from "@/lib/slug";
 
 export async function createLinkAction(_prev: CreateLinkState, form: FormData): Promise<CreateLinkState> {
   const user = await requireUser();
   return toCreateLinkState(async () => {
-    const created = await createLink({ userId: user.id }, String(form.get("url") ?? ""), String(form.get("slug") ?? ""));
+    const created = await createLink(
+      { userId: user.id },
+      String(form.get("url") ?? ""),
+      String(form.get("slug") ?? ""),
+      parseSlugLength(form.get("length")),
+    );
     revalidatePath("/dashboard");
     return created;
   });
