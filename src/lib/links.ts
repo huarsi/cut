@@ -19,7 +19,8 @@ const RESERVED = new Set([
 ]);
 
 const SLUG_PATTERN = /^[a-zA-Z0-9_-]{3,50}$/;
-const randomSlug = customAlphabet("abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", 7);
+// 57 caracteres: sin los que se confunden al leer (0/O, 1/l/I).
+const randomSlug = customAlphabet("abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", 5);
 
 export class LinkError extends Error {
   constructor(message: string, public status: 400 | 404 | 409 | 429 = 400) {
@@ -68,11 +69,12 @@ export async function createLink(owner: LinkOwner, rawUrl: string, customSlug?: 
     return created;
   }
 
-  // Con 55^7 combinaciones una colisión es rarísima, pero reintentamos por si acaso.
-  for (let attempt = 0; attempt < 5; attempt++) {
+  // 57^5 ≈ 600 millones de slugs. Si chocan cinco veces seguidas (la tabla ya está muy llena),
+  // los siguientes intentos usan 6 caracteres para no fallar nunca.
+  for (let attempt = 0; attempt < 10; attempt++) {
     const [created] = await db
       .insert(link)
-      .values({ id: nanoid(), slug: randomSlug(), url, ...owner })
+      .values({ id: nanoid(), slug: randomSlug(attempt < 5 ? 5 : 6), url, ...owner })
       .onConflictDoNothing({ target: link.slug })
       .returning();
     if (created) return created;
