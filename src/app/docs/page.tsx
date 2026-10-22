@@ -18,27 +18,25 @@ export default async function DocsPage() {
 
   return (
     <>
-      <Header />
-      {/* Mismo ancho que el resto de páginas; el texto se queda en una columna cómoda de leer. */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14">
-        <div className="max-w-3xl">
-          <h1 className="text-3xl font-semibold tracking-tight">
-            API<span className="text-accent">.</span>
-          </h1>
-          <p className="mt-2 text-muted">
-            {d.intro1}{" "}
-            <Link href="/dashboard/keys" className="text-fg underline decoration-line underline-offset-4 hover:decoration-fg">
-              {d.panel}
-            </Link>{" "}
-            <Rich text={d.intro2} />
-          </p>
+      <Header narrow />
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          API<span className="text-accent">.</span>
+        </h1>
+        <p className="mt-2 text-muted">
+          {d.intro1}{" "}
+          <Link href="/dashboard/keys" className="text-fg underline decoration-line underline-offset-4 hover:decoration-fg">
+            {d.panel}
+          </Link>{" "}
+          <Rich text={d.intro2} />
+        </p>
 
-          <Endpoint method="POST" path="/links" title={d.create.title} body={d.create.body}>
-            <Block>{`curl -X POST ${api}/links \\
+        <Endpoint method="POST" path="/links" title={d.create.title} body={d.create.body}>
+          <Block>{`curl -X POST ${api}/links \\
   -H "Authorization: Bearer $CUT_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"url": "${d.exampleUrl}", "length": 4}'`}</Block>
-            <Block>{`{
+          <Block>{`{
   "slug": "k3Rp",
   "shortUrl": "${baseUrl}/k3Rp",
   "url": "${d.exampleUrl}",
@@ -46,23 +44,23 @@ export default async function DocsPage() {
   "createdAt": "2026-10-21T18:00:00.000Z",
   "lastClickedAt": null
 }`}</Block>
-          </Endpoint>
+        </Endpoint>
 
-          <Endpoint method="GET" path="/links" title={d.list.title} body={d.list.body}>
-            <Block>{`curl "${api}/links?limit=10" -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
-          </Endpoint>
+        <Endpoint method="GET" path="/links" title={d.list.title} body={d.list.body}>
+          <Block>{`curl "${api}/links?limit=10" -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
+        </Endpoint>
 
-          <Endpoint method="GET" path="/links/:slug" title={d.get.title} body={d.get.body}>
-            <Block>{`curl ${api}/links/k3Rp -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
-          </Endpoint>
+        <Endpoint method="GET" path="/links/:slug" title={d.get.title} body={d.get.body}>
+          <Block>{`curl ${api}/links/k3Rp -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
+        </Endpoint>
 
-          <Endpoint method="DELETE" path="/links/:slug" title={d.remove.title} body={d.remove.body}>
-            <Block>{`curl -X DELETE ${api}/links/k3Rp -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
-          </Endpoint>
+        <Endpoint method="DELETE" path="/links/:slug" title={d.remove.title} body={d.remove.body}>
+          <Block>{`curl -X DELETE ${api}/links/k3Rp -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
+        </Endpoint>
 
-          <section className="mt-14">
-            <h2 className="text-lg font-semibold">JavaScript</h2>
-            <Block>{`const res = await fetch("${api}/links", {
+        <section className="mt-14">
+          <h2 className="text-lg font-semibold">JavaScript</h2>
+          <Block>{`const res = await fetch("${api}/links", {
   method: "POST",
   headers: {
     Authorization: \`Bearer \${process.env.CUT_API_KEY}\`,
@@ -71,23 +69,22 @@ export default async function DocsPage() {
   body: JSON.stringify({ url: "https://example.com", slug: "promo" }),
 });
 const { shortUrl } = await res.json();`}</Block>
-          </section>
+        </section>
 
-          <section className="mt-14">
-            <h2 className="text-lg font-semibold">{d.errorsTitle}</h2>
-            <p className="mt-2 text-muted">
-              <Rich text={d.errorsBody} />
-            </p>
-            <dl className="mt-4 divide-y divide-line rounded-2xl border border-line bg-card text-sm">
-              {Object.entries(d.errorRows).map(([code, text]) => (
-                <div key={code} className="flex gap-4 px-5 py-3">
-                  <dt className="font-mono font-medium">{code}</dt>
-                  <dd className="text-muted">{text}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        </div>
+        <section className="mt-14">
+          <h2 className="text-lg font-semibold">{d.errorsTitle}</h2>
+          <p className="mt-2 text-muted">
+            <Rich text={d.errorsBody} />
+          </p>
+          <dl className="mt-4 divide-y divide-line rounded-2xl border border-line bg-card text-sm">
+            {Object.entries(d.errorRows).map(([code, text]) => (
+              <div key={code} className="flex gap-4 px-5 py-3">
+                <dt className="font-mono font-medium">{code}</dt>
+                <dd className="text-muted">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
       </main>
     </>
   );
