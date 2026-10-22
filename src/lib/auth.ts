@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import { baseUrl } from "@/lib/links";
 
 const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } =
   process.env;
@@ -17,6 +18,10 @@ export const enabledProviders = {
 };
 
 export const auth = betterAuth({
+  // Sin BETTER_AUTH_URL, en Vercel se usa el dominio de producción del proyecto.
+  baseURL: baseUrl,
+  // Permite iniciar sesión también desde la URL propia de cada deploy (previews).
+  trustedOrigins: process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [],
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: { enabled: true, minPasswordLength: 8 },
   socialProviders: {

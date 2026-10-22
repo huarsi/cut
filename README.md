@@ -17,12 +17,10 @@ Si cambias `src/db/schema.ts`, genera la migración con `npm run db:generate` y 
 
 ## Deploy en Vercel
 
-1. Importa el repo en Vercel.
-2. En **Storage → Marketplace**, conecta **Neon**. Eso crea `DATABASE_URL` (usa la cadena *pooled*).
-3. Agrega estas variables de entorno:
-   - `BETTER_AUTH_SECRET`: `openssl rand -base64 32`
-   - `BETTER_AUTH_URL`: tu dominio público, por ejemplo `https://cut.to`. Se usa también para armar los links cortos.
-4. Despliega. El build corre `drizzle-kit migrate` antes de `next build`, así que las tablas se crean solas.
+1. Importa el repo en Vercel y agrega `BETTER_AUTH_SECRET` (`openssl rand -base64 32`). El primer deploy falla porque aún no hay base de datos; es normal.
+2. En el proyecto, **Storage → Create Database → Neon** y conéctala. Eso crea `DATABASE_URL`.
+3. **Deployments → ⋯ → Redeploy.** El build corre `drizzle-kit migrate` antes de `next build`, así que las tablas se crean solas.
+4. Cuando conectes un dominio propio, define `BETTER_AUTH_URL` con él (por ejemplo `https://cut.to`) y vuelve a desplegar. Sin ella se usa el dominio `*.vercel.app` de producción, también para armar los links cortos.
 
 ### Login con GitHub o Google (opcional)
 
