@@ -2,6 +2,10 @@
 
 Acortador de links con cuentas de usuario, conteo de clics y API REST con llaves.
 
+- **Sin cuenta:** cualquiera puede acortar desde la landing (máximo 15 links por IP por hora). Los links quedan ligados a una cookie del navegador.
+- **Con cuenta:** registro con usuario y correo, login con cualquiera de los dos, alias personalizados y borrado. Al entrar, el panel ofrece pasar a tu cuenta los links que ese navegador creó sin cuenta; solo se mueven los que aún no tienen dueño.
+- **API:** requiere cuenta; se usa con llaves que se crean en el panel.
+
 **Stack:** Next.js 16 · Tailwind 4 · Better Auth · Drizzle + Postgres (Neon) · Motion
 
 ## Desarrollo local

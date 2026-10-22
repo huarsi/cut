@@ -5,14 +5,22 @@ import { useActionState, useState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { CutAnimation } from "@/components/cut-animation";
 import { Scissors } from "@/components/icons";
-import { createLinkAction, type CreateLinkState } from "./actions";
+import type { CreateLinkState } from "@/lib/links";
 
-export function CreateLinkForm({ defaultUrl }: { defaultUrl: string }) {
+type Props = {
+  action: (prev: CreateLinkState, form: FormData) => Promise<CreateLinkState>;
+  /** El alias personalizado es solo para usuarios con cuenta. */
+  allowSlug?: boolean;
+  defaultUrl?: string;
+  autoFocus?: boolean;
+};
+
+export function CreateLinkForm({ action: createLink, allowSlug = false, defaultUrl = "", autoFocus = false }: Props) {
   // El input es controlado para conservar lo escrito si hay error y limpiarlo solo al tener éxito.
   const [url, setUrl] = useState(defaultUrl);
   const [showSlug, setShowSlug] = useState(false);
   const [state, action, pending] = useActionState<CreateLinkState, FormData>(async (prev, form) => {
-    const result = await createLinkAction(prev, form);
+    const result = await createLink(prev, form);
     if (result?.ok) setUrl("");
     return result;
   }, null);
@@ -24,7 +32,7 @@ export function CreateLinkForm({ defaultUrl }: { defaultUrl: string }) {
           <input
             name="url"
             required
-            autoFocus
+            autoFocus={autoFocus}
             autoComplete="off"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -43,7 +51,7 @@ export function CreateLinkForm({ defaultUrl }: { defaultUrl: string }) {
         </div>
 
         <AnimatePresence initial={false}>
-          {showSlug && (
+          {allowSlug && showSlug && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
@@ -62,14 +70,18 @@ export function CreateLinkForm({ defaultUrl }: { defaultUrl: string }) {
         </AnimatePresence>
       </form>
 
-      <div className="flex items-center justify-between px-3 pt-1 pb-1">
-        <button
-          type="button"
-          onClick={() => setShowSlug((v) => !v)}
-          className="cursor-pointer text-xs text-muted transition hover:text-fg"
-        >
-          {showSlug ? "− Sin alias" : "+ Alias personalizado"}
-        </button>
+      <div className="flex min-h-6 items-center justify-between gap-3 px-3 pt-1 pb-1">
+        {allowSlug ? (
+          <button
+            type="button"
+            onClick={() => setShowSlug((v) => !v)}
+            className="shrink-0 cursor-pointer text-xs text-muted transition hover:text-fg"
+          >
+            {showSlug ? "− Sin alias" : "+ Alias personalizado"}
+          </button>
+        ) : (
+          <span />
+        )}
         <AnimatePresence>
           {state && !state.ok && (
             <motion.p

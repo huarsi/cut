@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
+import { username } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -32,7 +33,8 @@ export const auth = betterAuth({
       google: { clientId: GOOGLE_CLIENT_ID!, clientSecret: GOOGLE_CLIENT_SECRET! },
     }),
   },
-  plugins: [nextCookies()],
+  // Usuarios de 3 a 30 caracteres: letras, números, _ y punto. Se guardan en minúsculas.
+  plugins: [username(), nextCookies()],
 });
 
 export const getSession = cache(async () =>

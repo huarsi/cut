@@ -11,7 +11,7 @@ export const POST = withApiKey(async (request, userId) => {
   const body = createSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return apiError(400, 'El cuerpo debe ser JSON: { "url": "https://…", "slug"?: "alias" }');
 
-  const created = await createLink(userId, body.data.url, body.data.slug);
+  const created = await createLink({ userId }, body.data.url, body.data.slug);
   return Response.json(serializeLink(created), { status: 201 });
 });
 

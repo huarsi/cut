@@ -7,7 +7,7 @@ import { AuthForm } from "./auth-form";
 export const metadata: Metadata = { title: "Entrar" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
-  const { next } = await searchParams;
+  const { next, mode } = await searchParams;
   // Solo rutas internas, para no convertir el login en un redirect abierto.
   const target = typeof next === "string" && /^\/(?!\/)/.test(next) ? next : "/dashboard";
 
@@ -19,7 +19,11 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <div className="mb-10 text-center">
           <Logo />
         </div>
-        <AuthForm next={target} providers={enabledProviders} />
+        <AuthForm
+          next={target}
+          providers={enabledProviders}
+          initialMode={mode === "signup" ? "signup" : "signin"}
+        />
       </div>
     </main>
   );

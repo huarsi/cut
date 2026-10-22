@@ -22,7 +22,7 @@ const SLUG_PATTERN = /^[a-zA-Z0-9_-]{3,50}$/;
 const randomSlug = customAlphabet("abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789", 7);
 
 export class LinkError extends Error {
-  constructor(message: string, public status: 400 | 404 | 409 = 400) {
+  constructor(message: string, public status: 400 | 404 | 409 | 429 = 400) {
     super(message);
   }
 }
@@ -47,7 +47,10 @@ function normalizeUrl(raw: string) {
   return url.toString();
 }
 
-export async function createLink(userId: string, rawUrl: string, customSlug?: string | null) {
+/** Dueño de un link nuevo: un usuario, o un navegador sin cuenta. */
+export type LinkOwner = { userId: string } | { anonId: string; ipHash: string };
+
+export async function createLink(owner: LinkOwner, rawUrl: string, customSlug?: string | null) {
   const url = normalizeUrl(rawUrl);
   const wanted = customSlug?.trim();
 
@@ -58,7 +61,7 @@ export async function createLink(userId: string, rawUrl: string, customSlug?: st
     if (RESERVED.has(wanted.toLowerCase())) throw new LinkError("Ese alias está reservado.", 409);
     const [created] = await db
       .insert(link)
-      .values({ id: nanoid(), slug: wanted, url, userId })
+      .values({ id: nanoid(), slug: wanted, url, ...owner })
       .onConflictDoNothing({ target: link.slug })
       .returning();
     if (!created) throw new LinkError("Ese alias ya está ocupado.", 409);
@@ -69,7 +72,7 @@ export async function createLink(userId: string, rawUrl: string, customSlug?: st
   for (let attempt = 0; attempt < 5; attempt++) {
     const [created] = await db
       .insert(link)
-      .values({ id: nanoid(), slug: randomSlug(), url, userId })
+      .values({ id: nanoid(), slug: randomSlug(), url, ...owner })
       .onConflictDoNothing({ target: link.slug })
       .returning();
     if (created) return created;
@@ -110,3 +113,20 @@ export const serializeLink = (l: Link) => ({
   createdAt: l.createdAt.toISOString(),
   lastClickedAt: l.lastClickedAt?.toISOString() ?? null,
 });
+
+export type CreateLinkState =
+  | { ok: true; url: string; shortUrl: string; at: number }
+  | { ok: false; error: string }
+  | null;
+
+/** Convierte el resultado de crear un link en el estado que muestra el formulario. */
+export async function toCreateLinkState(create: () => Promise<Link>): Promise<CreateLinkState> {
+  try {
+    const created = await create();
+    // `at` hace que la animación se repita aunque se acorte el mismo link dos veces.
+    return { ok: true, url: created.url, shortUrl: shortUrl(created.slug), at: Date.now() };
+  } catch (error) {
+    if (error instanceof LinkError) return { ok: false, error: error.message };
+    throw error;
+  }
+}

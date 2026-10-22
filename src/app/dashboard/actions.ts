@@ -1,26 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { claimAnonLinks, currentAnonId } from "@/lib/anon";
 import { createApiKey, revokeApiKey } from "@/lib/api-keys";
 import { requireUser } from "@/lib/auth";
-import { createLink, deleteLink, LinkError, shortUrl } from "@/lib/links";
-
-export type CreateLinkState =
-  | { ok: true; url: string; shortUrl: string; at: number }
-  | { ok: false; error: string }
-  | null;
+import { createLink, deleteLink, toCreateLinkState, type CreateLinkState } from "@/lib/links";
 
 export async function createLinkAction(_prev: CreateLinkState, form: FormData): Promise<CreateLinkState> {
   const user = await requireUser();
-  try {
-    const created = await createLink(user.id, String(form.get("url") ?? ""), String(form.get("slug") ?? ""));
+  return toCreateLinkState(async () => {
+    const created = await createLink({ userId: user.id }, String(form.get("url") ?? ""), String(form.get("slug") ?? ""));
     revalidatePath("/dashboard");
-    // `at` hace que la animación se repita aunque se acorte el mismo link dos veces.
-    return { ok: true, url: created.url, shortUrl: shortUrl(created.slug), at: Date.now() };
-  } catch (error) {
-    if (error instanceof LinkError) return { ok: false, error: error.message };
-    throw error;
-  }
+    return created;
+  });
+}
+
+export async function claimAnonLinksAction() {
+  const user = await requireUser();
+  const anonId = await currentAnonId();
+  if (anonId) await claimAnonLinks(anonId, user.id);
+  revalidatePath("/dashboard");
 }
 
 export async function deleteLinkAction(slug: string) {

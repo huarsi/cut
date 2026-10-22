@@ -5,11 +5,19 @@ import { useTransition } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { External, Trash } from "@/components/icons";
 import { displayUrl, timeAgo } from "@/lib/format";
-import { deleteLinkAction } from "./actions";
+import { deleteLinkAction } from "@/app/dashboard/actions";
 
-type Props = { slug: string; url: string; shortUrl: string; clicks: number; createdAt: string };
+type Props = {
+  slug: string;
+  url: string;
+  shortUrl: string;
+  clicks: number;
+  createdAt: string;
+  /** Los links anónimos no se pueden borrar: no hay cuenta que pruebe quién es el dueño. */
+  deletable?: boolean;
+};
 
-export function LinkRow({ slug, url, shortUrl, clicks, createdAt }: Props) {
+export function LinkRow({ slug, url, shortUrl, clicks, createdAt, deletable = true }: Props) {
   const [deleting, startDelete] = useTransition();
 
   return (
@@ -43,17 +51,19 @@ export function LinkRow({ slug, url, shortUrl, clicks, createdAt }: Props) {
 
       <div className="flex items-center">
         <CopyButton value={shortUrl} />
-        <button
-          type="button"
-          aria-label="Borrar"
-          disabled={deleting}
-          onClick={() => {
-            if (confirm(`¿Borrar /${slug}? Dejará de redirigir.`)) startDelete(() => deleteLinkAction(slug));
-          }}
-          className="grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-accent/10 hover:text-accent"
-        >
-          <Trash width={16} height={16} />
-        </button>
+        {deletable && (
+          <button
+            type="button"
+            aria-label="Borrar"
+            disabled={deleting}
+            onClick={() => {
+              if (confirm(`¿Borrar /${slug}? Dejará de redirigir.`)) startDelete(() => deleteLinkAction(slug));
+            }}
+            className="grid size-9 cursor-pointer place-items-center rounded-lg text-muted transition hover:bg-accent/10 hover:text-accent"
+          >
+            <Trash width={16} height={16} />
+          </button>
+        )}
       </div>
     </motion.li>
   );

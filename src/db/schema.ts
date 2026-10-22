@@ -7,6 +7,9 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  // Campos del plugin username de Better Auth.
+  username: text("username").unique(),
+  displayUsername: text("display_username"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -66,14 +69,21 @@ export const link = pgTable(
     id: text("id").primaryKey(),
     slug: text("slug").notNull().unique(),
     url: text("url").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+    // Null mientras el link sea anónimo; se llena cuando alguien lo reclama.
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    // Hash de la cookie del navegador que creó el link sin cuenta.
+    anonId: text("anon_id"),
+    // Hash de la IP, solo para limitar cuántos links anónimos se crean por hora.
+    ipHash: text("ip_hash"),
     clicks: integer("clicks").notNull().default(0),
     lastClickedAt: timestamp("last_clicked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("link_user_id_idx").on(t.userId)],
+  (t) => [
+    index("link_user_id_idx").on(t.userId),
+    index("link_anon_id_idx").on(t.anonId),
+    index("link_ip_hash_created_at_idx").on(t.ipHash, t.createdAt),
+  ],
 );
 
 export const apiKey = pgTable(

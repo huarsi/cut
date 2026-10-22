@@ -1,13 +1,21 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CreateLinkForm } from "@/components/create-link-form";
 import { CutDemo } from "@/components/cut-demo";
 import { Header } from "@/components/header";
-import { Scissors } from "@/components/icons";
+import { LinkRow } from "@/components/link-row";
+import { currentAnonId, listAnonLinks } from "@/lib/anon";
 import { getSession } from "@/lib/auth";
+import { shortUrl } from "@/lib/links";
+import { createAnonLinkAction } from "./actions";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const { missing } = await searchParams;
   const session = await getSession();
   if (session && !missing) redirect("/dashboard");
+
+  const anonId = await currentAnonId();
+  const anonLinks = anonId ? await listAnonLinks(anonId) : [];
 
   return (
     <>
@@ -29,27 +37,43 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           Acorta, comparte y mide tus links. O genéralos desde tu código con una API.
         </p>
 
-        {/* Sin sesión, el dashboard manda a login y regresa con la URL ya escrita. */}
-        <form action="/dashboard" className="mt-10 flex w-full max-w-xl gap-2">
-          <input
-            name="url"
-            required
-            autoComplete="off"
-            placeholder="Pega un link largo…"
-            className="input h-13 flex-1 rounded-2xl text-base"
-          />
-          <button className="btn-primary h-13 rounded-2xl px-5" aria-label="Acortar">
-            <Scissors />
-            <span className="hidden sm:inline">Cortar</span>
-          </button>
-        </form>
-
-        <div className="mt-14 w-full max-w-xl">
-          <CutDemo />
+        <div className="mt-10 w-full max-w-xl">
+          <CreateLinkForm action={createAnonLinkAction} />
         </div>
 
+        {anonLinks.length === 0 ? (
+          <div className="mt-14 w-full max-w-xl">
+            <CutDemo />
+          </div>
+        ) : (
+          <section className="mt-12 w-full max-w-xl">
+            <div className="mb-3 flex items-baseline justify-between gap-4 px-1">
+              <h2 className="text-sm font-medium">Tus links en este navegador</h2>
+              <Link href="/login?mode=signup" className="text-sm text-muted transition hover:text-fg">
+                Guárdalos en una cuenta →
+              </Link>
+            </div>
+            <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+              {anonLinks.map((l) => (
+                <LinkRow
+                  key={l.id}
+                  slug={l.slug}
+                  url={l.url}
+                  shortUrl={shortUrl(l.slug)}
+                  clicks={l.clicks}
+                  createdAt={l.createdAt.toISOString()}
+                  deletable={false}
+                />
+              ))}
+            </ul>
+            <p className="mt-3 px-1 text-xs text-muted">
+              Con una cuenta puedes usar alias personalizados, borrar links y generarlos con la API.
+            </p>
+          </section>
+        )}
+
         <section className="mt-24 grid w-full gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
-          <Feature title="Tu cuenta, tus links" text="Entra con email, GitHub o Google y administra todo en un solo lugar." />
+          <Feature title="Sin cuenta, al instante" text="Corta un link en un segundo. Si luego te registras, te los llevas a tu cuenta." />
           <Feature title="Clics en tiempo real" text="Cada link cuenta sus visitas y te dice cuándo fue la última." />
           <Feature title="API para automatizar" text="Crea llaves y genera links desde cualquier script con un POST." />
         </section>

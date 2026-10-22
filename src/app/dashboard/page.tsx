@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import { CreateLinkForm } from "@/components/create-link-form";
+import { LinkRow } from "@/components/link-row";
+import { countAnonLinks, currentAnonId } from "@/lib/anon";
 import { requireUser } from "@/lib/auth";
 import { listLinks, shortUrl } from "@/lib/links";
-import { CreateLinkForm } from "./create-link-form";
-import { LinkRow } from "./link-row";
+import { createLinkAction } from "./actions";
+import { ClaimBanner } from "./claim-banner";
+import { UsernamePrompt } from "./username-prompt";
 
 export const metadata: Metadata = { title: "Links" };
 
@@ -10,13 +14,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
   const { url } = await searchParams;
   const prefill = typeof url === "string" ? url : "";
   const user = await requireUser(prefill ? `/dashboard?url=${encodeURIComponent(prefill)}` : "/dashboard");
-  const links = await listLinks(user.id);
+  const anonId = await currentAnonId();
+  const [links, unclaimed] = await Promise.all([
+    listLinks(user.id),
+    anonId ? countAnonLinks(anonId) : 0,
+  ]);
   const totalClicks = links.reduce((sum, l) => sum + l.clicks, 0);
 
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight">
-        Hola, {user.name.split(" ")[0]}
+        Hola, {user.displayUsername ?? user.name.split(" ")[0]}
         <span className="text-accent">.</span>
       </h1>
       <p className="mt-1 text-muted">
@@ -24,8 +32,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
         {totalClicks === 1 ? "clic" : "clics"}
       </p>
 
+      {!user.username && <UsernamePrompt />}
+      {unclaimed > 0 && <ClaimBanner count={unclaimed} />}
+
       <div className="mt-8">
-        <CreateLinkForm defaultUrl={prefill} />
+        <CreateLinkForm action={createLinkAction} allowSlug autoFocus defaultUrl={prefill} />
       </div>
 
       <section className="mt-12">

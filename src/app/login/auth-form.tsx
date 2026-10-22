@@ -4,34 +4,36 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GitHub, Google } from "@/components/icons";
+import { UsernameField } from "@/components/username-field";
 import { authClient } from "@/lib/auth-client";
 
-type Mode = "signin" | "signup";
+export type Mode = "signin" | "signup";
 
 export function AuthForm({
   next,
   providers,
+  initialMode = "signin",
 }: {
   next: string;
   providers: { github: boolean; google: boolean };
+  initialMode?: Mode;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const email = String(form.get("email"));
     const password = String(form.get("password"));
 
     setPending(true);
     setError(null);
-    const { error } =
-      mode === "signin"
-        ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ email, password, name: String(form.get("name")) });
+    const { error } = await (mode === "signup"
+      ? authClient.signUp.email({ email: String(form.get("email")), password, name: username, username })
+      : signIn(String(form.get("identifier")).trim(), password));
     setPending(false);
 
     if (error) return setError(translateError(error.code, error.message));
@@ -70,19 +72,25 @@ export function AuthForm({
       </div>
 
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <AnimatePresence initial={false}>
-          {mode === "signup" && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <input name="name" required placeholder="Nombre" autoComplete="name" className="input" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <input name="email" type="email" required placeholder="Email" autoComplete="email" className="input" />
+        {mode === "signup" ? (
+          <motion.div key="signup" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-3">
+            <UsernameField value={username} onChange={setUsername} />
+            <input name="email" type="email" required placeholder="Email" autoComplete="email" className="input" />
+          </motion.div>
+        ) : (
+          <motion.input
+            key="signin"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            name="identifier"
+            required
+            placeholder="Email o usuario"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            className="input"
+          />
+        )}
         <input
           name="password"
           type="password"
@@ -134,10 +142,24 @@ export function AuthForm({
   );
 }
 
+/** Con "@" se trata como correo; si no, como nombre de usuario. */
+function signIn(identifier: string, password: string) {
+  return identifier.includes("@")
+    ? authClient.signIn.email({ email: identifier, password })
+    : authClient.signIn.username({ username: identifier, password });
+}
+
 function translateError(code: string | undefined, fallback: string | undefined) {
   switch (code) {
     case "INVALID_EMAIL_OR_PASSWORD":
-      return "Email o contraseña incorrectos.";
+    case "INVALID_USERNAME_OR_PASSWORD":
+      return "Usuario, email o contraseña incorrectos.";
+    case "USERNAME_IS_ALREADY_TAKEN":
+      return "Ese usuario ya está ocupado.";
+    case "USERNAME_TOO_SHORT":
+    case "USERNAME_TOO_LONG":
+    case "INVALID_USERNAME":
+      return "El usuario debe tener de 3 a 30 caracteres: letras, números, _ o punto.";
     case "USER_ALREADY_EXISTS":
     case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "Ya existe una cuenta con ese email.";
