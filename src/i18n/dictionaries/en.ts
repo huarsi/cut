@@ -217,6 +217,12 @@ export const en: Dictionary = {
       button: "Choose a new password",
       outro: "If this wasn't you, ignore this email: your password won't change.",
     },
+    verify: {
+      subject: "Confirm your cut. email",
+      intro: "You asked to confirm this email to access moderation on cut. Use this button to confirm it. The link expires in 1 hour.",
+      button: "Confirm email",
+      outro: "If you didn't ask for this or don't have a cut. account, ignore this email and don't click.",
+    },
     unlimited: {
       button: "Go to my links",
       outro: "Thanks for using cut.",

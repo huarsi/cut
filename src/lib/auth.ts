@@ -47,6 +47,19 @@ export const auth = betterAuth({
       });
     },
   },
+  // Confirmar el correo no se pide al registrarse; solo hace falta para entrar a /admin.
+  emailVerification: {
+    expiresIn: 3600,
+    async sendVerificationEmail({ user, url, token }) {
+      const t = (await getT()).email.verify;
+      await sendEmail({
+        to: user.email,
+        subject: t.subject,
+        ...simpleEmail({ intro: t.intro, button: t.button, url, outro: t.outro }),
+        idempotencyKey: keyFor("verify-email", token),
+      });
+    },
+  },
   user: {
     // Borrar la cuenta también borra sus links y llaves (ON DELETE CASCADE).
     deleteUser: { enabled: true },

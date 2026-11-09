@@ -217,6 +217,12 @@ export const pt: Dictionary = {
       button: "Escolher nova senha",
       outro: "Se não foi você, ignore este email: sua senha não muda.",
     },
+    verify: {
+      subject: "Confirme seu email do cut.",
+      intro: "Você pediu para confirmar este email para acessar a moderação do cut. Use este botão para confirmá-lo. O link expira em 1 hora.",
+      button: "Confirmar email",
+      outro: "Se não foi você ou você não tem conta no cut., ignore este email e não clique.",
+    },
     unlimited: {
       button: "Ir para meus links",
       outro: "Obrigado por usar o cut.",

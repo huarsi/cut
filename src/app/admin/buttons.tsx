@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useConfirm } from "@/components/confirm-dialog";
+import { authClient } from "@/lib/auth-client";
 import {
   blockDomainAction,
   disableLinkAction,
@@ -254,5 +255,31 @@ export function ReplyToReporter({ reportId, email, adminEmail }: { reportId: str
         </button>
       </div>
     </form>
+  );
+}
+
+/** Manda el link para confirmar el correo; al abrirlo, Better Auth lo marca confirmado y regresa a /admin. */
+export function VerifyEmail({ email, linkError }: { email: string; linkError: string | null }) {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+
+  async function send() {
+    setState("sending");
+    const { error } = await authClient.sendVerificationEmail({ email, callbackURL: "/admin" });
+    setState(error ? "error" : "sent");
+  }
+
+  return (
+    <div className="mt-6">
+      {linkError && state === "idle" && <p className="mb-4 text-sm text-danger">{linkError}</p>}
+      <button type="button" onClick={send} disabled={state === "sending"} className="btn-primary h-11 px-5 text-sm">
+        {state === "sending" ? "Mandando…" : state === "sent" ? "Mandar otra vez" : "Mandar link de confirmación"}
+      </button>
+      {state === "sent" && (
+        <p className="mt-3 text-sm text-muted">Listo. Revisa {email} y abre el link; vence en 1 hora.</p>
+      )}
+      {state === "error" && (
+        <p className="mt-3 text-sm text-danger">No se pudo mandar el correo. Espera un momento e intenta de nuevo.</p>
+      )}
+    </div>
   );
 }

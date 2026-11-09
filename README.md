@@ -18,7 +18,7 @@ Acortador de links con cuentas de usuario, conteo de clics y API REST con llaves
 
 ## Moderación
 
-El portal `/admin` solo lo ven los correos de `ADMIN_EMAILS`; para cualquier otra persona responde 404, como si no existiera. Está solo en español.
+El portal `/admin` solo lo ven los correos de `ADMIN_EMAILS`; para cualquier otra persona responde 404, como si no existiera. Además, cada moderador debe **confirmar su correo** la primera vez (el portal le manda el link), para que nadie entre registrando antes un correo de la lista. A los usuarios normales no se les pide confirmar. Está solo en español.
 
 - **Reportes:** con el primer reporte pendiente de cada link llega un correo a `ADMIN_EMAILS`. Desde el portal se desactiva el link, se bloquea su dominio (y subdominios) o se descarta el reporte. También se pueden reactivar links y desbloquear dominios.
 - **Responder a quien reportó:** si dejó su correo, al resolver se le avisa automáticamente del resultado, en el idioma en que reportó; la casilla se puede desmarcar para no mandar nada. También se le puede escribir a mano con "Responder": si contesta, la respuesta le llega a quien moderó (ve ese correo). A quien ya se le respondió a mano no se le manda además el aviso automático. El historial muestra a quién se avisó y qué se le escribió.
@@ -44,7 +44,7 @@ npm test          # una vez
 npm run test:watch
 ```
 
-Usan [Vitest](https://vitest.dev) y una base aparte, `cut_test`, en el mismo Postgres de `docker compose` (se crea y se migra sola; nunca toca la de desarrollo). Cubren las reglas de URLs y bloqueos, la detección de bots, los límites por cuenta y sin cuenta, reclamar links anónimos, reportes, avisos a quien reporta, moderación, cuentas ilimitadas y la API. No mandan correos reales. En GitHub corren en cada push y pull request, junto con TypeScript y ESLint (`.github/workflows/ci.yml`).
+Usan [Vitest](https://vitest.dev) y una base aparte, `cut_test`, en el mismo Postgres de `docker compose` (se crea y se migra sola; nunca toca la de desarrollo). Cubren las reglas de URLs y bloqueos, quién puede moderar, la detección de bots, los límites por cuenta y sin cuenta, reclamar links anónimos, reportes, avisos a quien reporta, moderación, cuentas ilimitadas y la API. No mandan correos reales. En GitHub corren en cada push y pull request, junto con TypeScript y ESLint (`.github/workflows/ci.yml`).
 
 ## Deploy en Vercel
 
@@ -66,7 +66,7 @@ Usan [Vitest](https://vitest.dev) y una base aparte, `cut_test`, en el mismo Pos
 | `BLOCKED_DOMAINS` | Dominios bloqueados fijos, separados por comas (opcional) |
 | `GOOGLE_SAFE_BROWSING_KEY` | Revisar links nuevos con Google Safe Browsing (opcional) |
 
-Los correos que manda cut.: recuperar contraseña, avisos de reportes y solicitudes a `ADMIN_EMAILS`, la respuesta a una solicitud de cuenta ilimitada y el resultado de un reporte a quien lo hizo.
+Los correos que manda cut.: recuperar contraseña, confirmar el correo de quien modera, avisos de reportes y solicitudes a `ADMIN_EMAILS`, la respuesta a una solicitud de cuenta ilimitada y el resultado de un reporte a quien lo hizo.
 
 ### Login con GitHub o Google (apagado)
 

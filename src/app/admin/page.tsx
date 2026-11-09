@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyButton } from "@/components/copy-button";
 import { Header } from "@/components/header";
-import { requireAdmin } from "@/lib/admin";
+import { canModerate, requireListedAdmin } from "@/lib/admin";
 import { displayUrl, timeAgo } from "@/lib/format";
 import { shortHost } from "@/lib/links";
 import {
@@ -21,7 +21,7 @@ import {
   revokeUnlimitedAction,
   unblockDomainAction,
 } from "./actions";
-import { ActionButton, BlockDomainForm, GrantUnlimitedForm, ReplyToReporter, ReportActions } from "./buttons";
+import { ActionButton, BlockDomainForm, GrantUnlimitedForm, ReplyToReporter, ReportActions, VerifyEmail } from "./buttons";
 
 // El portal es solo para quien modera, así que está solo en español.
 export const metadata: Metadata = { title: "Moderación" };
@@ -38,8 +38,32 @@ type Tab = keyof typeof TABS;
 const ago = (date: Date | null) => (date ? timeAgo(date, "es") : "");
 
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
-  const admin = await requireAdmin();
-  const { tab: tabParam } = await searchParams;
+  const admin = await requireListedAdmin();
+  const { tab: tabParam, error } = await searchParams;
+  if (!canModerate(admin)) {
+    return (
+      <>
+        <Header />
+        <main className="mx-auto w-full max-w-md flex-1 px-4 pt-8 pb-24 sm:px-6 sm:pt-14">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Confirma tu correo<span className="text-accent">.</span>
+          </h1>
+          <p className="mt-2 text-muted">
+            Para entrar a moderación, confirma que <span className="text-fg">{admin.email}</span> es tuyo con un
+            link que te mandamos por correo. Solo hace falta una vez.
+          </p>
+          <VerifyEmail
+            email={admin.email}
+            linkError={
+              typeof error === "string"
+                ? `${error === "TOKEN_EXPIRED" ? "El link ya venció." : "El link no es válido."} Pide uno nuevo.`
+                : null
+            }
+          />
+        </main>
+      </>
+    );
+  }
   const tab: Tab = typeof tabParam === "string" && tabParam in TABS ? (tabParam as Tab) : "open";
   const [openCount, requestCount] = await Promise.all([countOpenReports(), countOpenRequests()]);
   const badges: Partial<Record<Tab, number>> = { open: openCount, accounts: requestCount };

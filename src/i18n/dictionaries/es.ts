@@ -217,6 +217,12 @@ export const es = {
       button: "Elegir contraseña nueva",
       outro: "Si no fuiste tú, ignora este correo: tu contraseña no cambia.",
     },
+    verify: {
+      subject: "Confirma tu correo de cut.",
+      intro: "Pediste confirmar este correo para entrar a moderación en cut. Usa este botón para confirmarlo. El link vence en 1 hora.",
+      button: "Confirmar correo",
+      outro: "Si no lo pediste tú o no tienes cuenta en cut., ignora este correo y no hagas clic.",
+    },
     unlimited: {
       button: "Ir a mis links",
       outro: "Gracias por usar cut.",

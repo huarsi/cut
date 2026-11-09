@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/db";
 import { link, report, user } from "@/db/schema";
+import { canModerate } from "@/lib/admin";
 import { createLink } from "@/lib/links";
 import { blockDomain, createReport, disableLink, dismissReports, listReportGroups, replyToReporter } from "@/lib/reports";
 import { requestUnlimited, resolveRequest, setUnlimited, unlimitedStatus } from "@/lib/support";
@@ -12,6 +13,15 @@ beforeEach(resetDb);
 
 const disabled = async (slug: string) =>
   (await db.select({ d: link.disabledAt }).from(link).where(eq(link.slug, slug)))[0].d !== null;
+
+describe("quién puede moderar", () => {
+  it("hace falta un correo de ADMIN_EMAILS y además confirmado", () => {
+    expect(canModerate({ email: "admin@cut.test", emailVerified: true })).toBe(true);
+    expect(canModerate({ email: "ADMIN@cut.test", emailVerified: true })).toBe(true);
+    expect(canModerate({ email: "admin@cut.test", emailVerified: false })).toBe(false);
+    expect(canModerate({ email: "otro@cut.test", emailVerified: true })).toBe(false);
+  });
+});
 
 describe("reportes", () => {
   it("avisa por correo solo con el primer reporte pendiente de cada link", async () => {
