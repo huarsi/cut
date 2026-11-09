@@ -229,6 +229,17 @@ export const en: Dictionary = {
         intro: "We reviewed your request and can't give you an unlimited account for now. Your account keeps working with the normal limit.",
       },
     },
+    report: {
+      subject: "We reviewed your report",
+      disabled: (link: string) =>
+        `Thanks for letting us know. We reviewed ${link} and disabled it: it no longer leads to its destination.`,
+      dismissed: (link: string) =>
+        `Thanks for letting us know. We reviewed ${link} and didn't find a problem, so it stays active.`,
+      button: "Report another link",
+      outro: "If you see another suspicious link, you can report it anytime.",
+      replySubject: (link: string) => `About your report of ${link}`,
+      replyOutro: "You can reply to this email if you'd like to add anything.",
+    },
   },
   report: {
     text: "If a cut. link leads to phishing, malware or spam, let us know. We'll review it and disable it if needed.",
@@ -243,7 +254,7 @@ export const en: Dictionary = {
     },
     details: "Details (optional)",
     detailsPlaceholder: "Where did you see it? What does the page ask for?",
-    email: "Your email (optional), in case we need more details",
+    email: "Your email (optional), to let you know the outcome",
     send: "Send report",
     sending: "Sending…",
     sent: "Thanks. We'll review the link soon.",

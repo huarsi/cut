@@ -16,17 +16,23 @@ type Email = {
   subject: string;
   text: string;
   html: string;
+  /** A dónde llegan las respuestas, si no es la dirección de envío (que no recibe correos). */
+  replyTo?: string;
   /** Evita mandar dos veces el mismo correo si se reintenta (Resend lo recuerda 24 h). */
   idempotencyKey: string;
 };
 
-export async function sendEmail({ to, subject, text, html, idempotencyKey }: Email) {
+export async function sendEmail({ to, subject, text, html, replyTo, idempotencyKey }: Email) {
   if (!resend || !EMAIL_FROM) {
-    console.log(`\n[email] Para: ${[to].flat().join(", ")}\n[email] Asunto: ${subject}\n${text}\n`);
+    const reply = replyTo ? `\n[email] Responder a: ${replyTo}` : "";
+    console.log(`\n[email] Para: ${[to].flat().join(", ")}${reply}\n[email] Asunto: ${subject}\n${text}\n`);
     return;
   }
   // El SDK de Resend no lanza errores: los devuelve en `error`.
-  const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, text, html }, { idempotencyKey });
+  const { error } = await resend.emails.send(
+    { from: EMAIL_FROM, to, subject, text, html, ...(replyTo && { replyTo }) },
+    { idempotencyKey },
+  );
   if (error) throw new Error(`Resend: ${error.message}`);
 }
 
@@ -38,19 +44,30 @@ const escape = (value: string) =>
   value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /**
- * Correo sencillo: el logo, un párrafo, un botón y el link en texto por si el botón no se ve.
+ * Correo sencillo: el logo, un párrafo, un botón (opcional) y el link en texto por si el botón no se ve.
  * El logo va como texto (no imagen) para que se vea aunque el cliente de correo bloquee imágenes.
  */
-export function simpleEmail({ intro, button, url, outro }: { intro: string; button: string; url: string; outro: string }) {
-  const text = `${intro}\n\n${url}\n\n${outro}`;
+export function simpleEmail({
+  intro,
+  button,
+  url,
+  outro,
+}: {
+  intro: string;
+  button?: string;
+  url?: string;
+  outro: string;
+}) {
+  const action = button && url ? { button, url } : null;
+  const text = action ? `${intro}\n\n${action.url}\n\n${outro}` : `${intro}\n\n${outro}`;
   const html = `<!doctype html>
 <html><body style="margin:0;padding:32px 16px;background:#fafafa;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0a0a0a">
   <div style="max-width:440px;margin:0 auto;background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:28px">
     <p style="margin:0 0 20px;font-size:24px;font-weight:600;letter-spacing:-0.5px;line-height:1">cut<span style="color:#ff5a1f">.</span></p>
     <p style="margin:0 0 24px;font-size:15px;line-height:1.5;white-space:pre-line">${escape(intro)}</p>
-    <a href="${escape(url)}" style="display:inline-block;background:#0a0a0a;color:#fafafa;text-decoration:none;font-size:14px;font-weight:500;padding:11px 18px;border-radius:10px">${escape(button)}</a>
-    <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#737373">${escape(outro)}</p>
-    <p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#a3a3a3;word-break:break-all">${escape(url)}</p>
+    ${action ? `<a href="${escape(action.url)}" style="display:inline-block;background:#0a0a0a;color:#fafafa;text-decoration:none;font-size:14px;font-weight:500;padding:11px 18px;border-radius:10px">${escape(action.button)}</a>` : ""}
+    <p style="margin:${action ? 24 : 0}px 0 0;font-size:13px;line-height:1.5;color:#737373">${escape(outro)}</p>
+    ${action ? `<p style="margin:12px 0 0;font-size:12px;line-height:1.5;color:#a3a3a3;word-break:break-all">${escape(action.url)}</p>` : ""}
   </div>
 </body></html>`;
   return { text, html };

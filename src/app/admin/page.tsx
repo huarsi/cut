@@ -16,15 +16,12 @@ import {
 import { LINK_LIMITS } from "@/lib/links";
 import { countOpenRequests, listOpenRequests, listUnlimitedUsers } from "@/lib/support";
 import {
-  blockDomainAction,
-  disableLinkAction,
-  dismissReportsAction,
   enableLinkAction,
   resolveRequestAction,
   revokeUnlimitedAction,
   unblockDomainAction,
 } from "./actions";
-import { ActionButton, BlockDomainForm, GrantUnlimitedForm } from "./buttons";
+import { ActionButton, BlockDomainForm, GrantUnlimitedForm, ReplyToReporter, ReportActions } from "./buttons";
 
 // El portal es solo para quien modera, así que está solo en español.
 export const metadata: Metadata = { title: "Moderación" };
@@ -41,7 +38,7 @@ type Tab = keyof typeof TABS;
 const ago = (date: Date | null) => (date ? timeAgo(date, "es") : "");
 
 export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { tab: tabParam } = await searchParams;
   const tab: Tab = typeof tabParam === "string" && tabParam in TABS ? (tabParam as Tab) : "open";
   const [openCount, requestCount] = await Promise.all([countOpenReports(), countOpenRequests()]);
@@ -73,8 +70,8 @@ export default async function AdminPage({ searchParams }: PageProps<"/admin">) {
         </nav>
 
         <div className="mt-6">
-          {tab === "open" && <OpenReports />}
-          {tab === "history" && <History />}
+          {tab === "open" && <OpenReports adminEmail={admin.email} />}
+          {tab === "history" && <History adminEmail={admin.email} />}
           {tab === "disabled" && <DisabledLinks />}
           {tab === "domains" && <Domains />}
           {tab === "accounts" && <Accounts />}
@@ -114,7 +111,29 @@ function hostOf(url: string) {
   }
 }
 
-async function OpenReports() {
+type Report = ReportGroup["reports"][number];
+
+/** Correo de quien reportó, si ya se le avisó del resultado y el botón para responderle a mano. */
+function Reporter({ report: r, adminEmail }: { report: Report; adminEmail: string }) {
+  if (!r.reporterEmail) return null;
+  const state = r.reply ? "respondido a mano" : r.notifiedAt ? "avisado del resultado" : r.status !== "open" && "sin avisar";
+  return (
+    <>
+      <span>{r.reporterEmail}</span>
+      {state && <span className={r.notifiedAt ? "text-fg" : undefined}>{state}</span>}
+      <ReplyToReporter reportId={r.id} email={r.reporterEmail} adminEmail={adminEmail} />
+      {r.reply && (
+        <span className="basis-full border-l-2 border-line pl-2 whitespace-pre-line text-fg/80">{r.reply}</span>
+      )}
+    </>
+  );
+}
+
+/** Cuántas personas distintas dejaron su correo y todavía no saben el resultado. */
+const toNotify = (reports: Report[]) =>
+  new Set(reports.filter((r) => r.reporterEmail && !r.notifiedAt).map((r) => r.reporterEmail!.toLowerCase())).size;
+
+async function OpenReports({ adminEmail }: { adminEmail: string }) {
   const groups = await listReportGroups("open");
   if (groups.length === 0) return <Empty>No hay reportes pendientes.</Empty>;
 
@@ -154,10 +173,11 @@ async function OpenReports() {
               {group.reports.slice(0, 5).map((r) => (
                 <li key={r.id} className="text-sm">
                   {r.details && <p className="whitespace-pre-line">{r.details}</p>}
-                  <p className="text-xs text-muted">
-                    {REASON_LABELS[r.reason]} · {ago(r.createdAt)}
-                    {r.reporterEmail && ` · ${r.reporterEmail}`}
-                  </p>
+                  <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-muted [&>*:not(:first-child)]:before:mr-1.5 [&>*:not(:first-child)]:before:content-['·'] [&>form]:before:hidden [&>.basis-full]:before:hidden">
+                    <span>{REASON_LABELS[r.reason]}</span>
+                    <span>{ago(r.createdAt)}</span>
+                    <Reporter report={r} adminEmail={adminEmail} />
+                  </div>
                 </li>
               ))}
               {group.reports.length > 5 && (
@@ -165,31 +185,13 @@ async function OpenReports() {
               )}
             </ul>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {group.link && !group.link.disabledAt && (
-                <ActionButton action={disableLinkAction.bind(null, group.link.id)} danger>
-                  Desactivar link
-                </ActionButton>
-              )}
-              {group.link && host && (
-                <ActionButton
-                  action={blockDomainAction.bind(null, host, group.link.id)}
-                  confirm={{
-                    title: `¿Bloquear ${host}?`,
-                    text: "También sus subdominios. Se desactivan todos sus links y no se podrán crear nuevos.",
-                    label: "Bloquear",
-                    danger: true,
-                  }}
-                >
-                  {group.link.disabledAt ? `Bloquear ${host}` : `Desactivar y bloquear ${host}`}
-                </ActionButton>
-              )}
-              {group.link?.disabledAt ? (
-                <ActionButton action={disableLinkAction.bind(null, group.link.id)}>Cerrar reportes</ActionButton>
-              ) : (
-                <ActionButton action={dismissReportsAction.bind(null, group.key)}>Descartar</ActionButton>
-              )}
-            </div>
+            <ReportActions
+              groupKey={group.key}
+              linkId={group.link?.id ?? null}
+              host={host}
+              linkDisabled={Boolean(group.link?.disabledAt)}
+              toNotify={toNotify(group.reports)}
+            />
           </li>
         );
       })}
@@ -199,7 +201,7 @@ async function OpenReports() {
 
 const STATUS_LABELS = { disabled: "Desactivado", dismissed: "Descartado", open: "Pendiente" } as const;
 
-async function History() {
+async function History({ adminEmail }: { adminEmail: string }) {
   const groups = await listReportGroups("resolved");
   if (groups.length === 0) return <Empty>Todavía no hay reportes resueltos.</Empty>;
 
@@ -211,6 +213,20 @@ async function History() {
           <li key={group.key} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:gap-4">
             <div className="min-w-0 flex-1">
               <LinkSummary group={group} />
+              {group.reports.some((r) => r.reporterEmail) && (
+                <ul className="mt-2 space-y-1">
+                  {group.reports
+                    .filter((r) => r.reporterEmail)
+                    .map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-muted [&>*:not(:first-child)]:before:mr-1.5 [&>*:not(:first-child)]:before:content-['·'] [&>form]:before:hidden [&>.basis-full]:before:hidden"
+                      >
+                        <Reporter report={r} adminEmail={adminEmail} />
+                      </li>
+                    ))}
+                </ul>
+              )}
             </div>
             <div className="shrink-0 text-xs text-muted sm:text-right">
               <p className={last.status === "disabled" ? "font-medium text-danger" : "font-medium text-fg"}>

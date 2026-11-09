@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/db";
 import { link, report, user } from "@/db/schema";
 import { createLink } from "@/lib/links";
-import { blockDomain, createReport, disableLink, dismissReports, listReportGroups } from "@/lib/reports";
+import { blockDomain, createReport, disableLink, dismissReports, listReportGroups, replyToReporter } from "@/lib/reports";
 import { requestUnlimited, resolveRequest, setUnlimited, unlimitedStatus } from "@/lib/support";
 import { pendingAfter, setRequest } from "../setup";
 import { createUser, resetDb } from "./helpers";
@@ -67,6 +67,75 @@ describe("reportes", () => {
         { slug: "bueno1", status: "dismissed" },
       ]),
     );
+  });
+});
+
+describe("avisar a quien reportó", () => {
+  /** Correos impresos en la terminal (sin Resend), con el asunto o texto pedido. */
+  const sent = (log: { mock: { calls: unknown[][] } }, text: string) =>
+    log.mock.calls.filter(([t]) => String(t).includes(text)).map(([t]) => String(t));
+
+  async function reported(slug: string, reports: { email: string; ip: string; lang?: string }[]) {
+    const owner = await createUser({ unlimited: true });
+    await createLink({ userId: owner.id }, "example.com", slug);
+    for (const r of reports) {
+      setRequest({ ip: r.ip, cookies: r.lang ? { cut_lang: r.lang } : {} });
+      await createReport({ link: slug, reason: "phishing", details: "", email: r.email });
+    }
+    return (await db.select().from(link).where(eq(link.slug, slug)))[0];
+  }
+
+  it("al resolver avisa una vez por persona, en su idioma, y no a quien no dejó correo", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const target = await reported("aviso1", [
+      { email: "ana@example.com", ip: "203.0.113.10" },
+      { email: "ANA@example.com", ip: "203.0.113.11" },
+      { email: "bob@example.com", ip: "203.0.113.12", lang: "en" },
+      { email: "", ip: "203.0.113.13" },
+    ]);
+    await Promise.all(pendingAfter);
+    pendingAfter.length = 0;
+
+    await disableLink(target.id, "admin@cut.test");
+    await Promise.all(pendingAfter);
+
+    expect(sent(log, "Revisamos tu reporte")).toHaveLength(1);
+    expect(sent(log, "Revisamos tu reporte")[0]).toContain("lo desactivamos");
+    expect(sent(log, "We reviewed your report")).toHaveLength(1);
+    const rows = await db.select().from(report).where(eq(report.slug, "aviso1"));
+    expect(rows.filter((r) => r.notifiedAt)).toHaveLength(3);
+  });
+
+  it("sin la casilla no se manda nada", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const target = await reported("aviso2", [{ email: "ana@example.com", ip: "203.0.113.20" }]);
+    await dismissReports(target.id, "admin@cut.test", false);
+    await Promise.all(pendingAfter);
+    expect(sent(log, "Revisamos tu reporte")).toHaveLength(0);
+    expect((await db.select().from(report).where(eq(report.slug, "aviso2")))[0].notifiedAt).toBeNull();
+  });
+
+  it("la respuesta a mano llega con responder-a de quien modera y evita el aviso automático", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const target = await reported("aviso3", [
+      { email: "ana@example.com", ip: "203.0.113.30" },
+      { email: "bob@example.com", ip: "203.0.113.31" },
+    ]);
+    const [ana] = await db.select().from(report).where(eq(report.reporterEmail, "ana@example.com"));
+
+    expect(await replyToReporter(ana.id, "  ", "admin@cut.test")).toMatchObject({ ok: false });
+    expect(await replyToReporter(ana.id, "Lo estamos revisando, gracias.", "admin@cut.test")).toMatchObject({ ok: true });
+    const [reply] = sent(log, "Sobre tu reporte de");
+    expect(reply).toContain("Para: ana@example.com");
+    expect(reply).toContain("Responder a: admin@cut.test");
+    expect(reply).toContain("Lo estamos revisando, gracias.");
+
+    await dismissReports(target.id, "admin@cut.test");
+    await Promise.all(pendingAfter);
+    const auto = sent(log, "Revisamos tu reporte");
+    expect(auto).toHaveLength(1);
+    expect(auto[0]).toContain("bob@example.com");
+    expect(auto[0]).toContain("no encontramos un problema");
   });
 });
 

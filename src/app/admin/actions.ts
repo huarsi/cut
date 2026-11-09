@@ -2,29 +2,38 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
-import { blockDomain, disableLink, dismissReports, enableLink, unblockDomain } from "@/lib/reports";
+import { blockDomain, disableLink, dismissReports, enableLink, replyToReporter, unblockDomain } from "@/lib/reports";
 import { findUser, resolveRequest, setUnlimited } from "@/lib/support";
 
 // Cada acción vuelve a comprobar que quien la llama es administrador.
+// `notify`: si se avisa por correo a quien reportó (si dejó su correo y no se le respondió a mano).
 
-export async function disableLinkAction(linkId: string) {
+export async function disableLinkAction(linkId: string, notify = true) {
   const admin = await requireAdmin();
-  await disableLink(linkId, admin.email);
+  await disableLink(linkId, admin.email, notify);
   revalidatePath("/admin");
 }
 
-export async function blockDomainAction(domain: string, linkId?: string) {
+export async function blockDomainAction(domain: string, linkId?: string, notify = true) {
   const admin = await requireAdmin();
   // El link reportado se desactiva aunque su host no coincida exacto (p. ej. si cambió de destino).
-  if (linkId) await disableLink(linkId, admin.email);
-  await blockDomain(domain, admin.email, linkId ? "Desde un reporte" : "Agregado a mano");
+  if (linkId) await disableLink(linkId, admin.email, notify);
+  await blockDomain(domain, admin.email, linkId ? "Desde un reporte" : "Agregado a mano", notify);
   revalidatePath("/admin");
 }
 
-export async function dismissReportsAction(key: string) {
+export async function dismissReportsAction(key: string, notify = true) {
   const admin = await requireAdmin();
-  await dismissReports(key, admin.email);
+  await dismissReports(key, admin.email, notify);
   revalidatePath("/admin");
+}
+
+/** Respuesta escrita a mano a quien reportó. Devuelve un mensaje para mostrar. */
+export async function replyToReportAction(reportId: string, message: string) {
+  const admin = await requireAdmin();
+  const result = await replyToReporter(reportId, message, admin.email);
+  if (result.ok) revalidatePath("/admin");
+  return result;
 }
 
 export async function enableLinkAction(linkId: string) {

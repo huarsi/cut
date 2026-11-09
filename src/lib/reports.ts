@@ -3,14 +3,18 @@ import { nanoid } from "nanoid";
 import { after } from "next/server";
 import { db } from "@/db";
 import { blockedDomain, link, report, user, type ReportStatus } from "@/db/schema";
-
-type Report = typeof report.$inferSelect;
+import { isLocale } from "@/i18n/config";
+import { dictionaries } from "@/i18n/dictionaries";
+import { getLocale } from "@/i18n/server";
 import { ADMIN_EMAILS } from "@/lib/admin";
 import { currentIpHash } from "@/lib/anon";
-import { sendEmail, simpleEmail } from "@/lib/email";
+import { keyFor, sendEmail, simpleEmail } from "@/lib/email";
 import { REPORT_DETAILS_MAX, type ReportReason } from "@/lib/limits";
-import { baseUrl, LinkError } from "@/lib/links";
+import { baseUrl, LinkError, shortHost } from "@/lib/links";
 import { ALIAS_PATTERN } from "@/lib/slug";
+
+type Report = typeof report.$inferSelect;
+const REPLY_MAX = 2000;
 
 const MAX_REPORTS_PER_HOUR = 5;
 
@@ -55,6 +59,7 @@ export async function createReport(input: {
     reason: input.reason,
     details,
     reporterEmail: input.email.trim().slice(0, 200) || null,
+    locale: await getLocale(),
     ipHash,
   });
 
@@ -127,11 +132,90 @@ export async function listReportGroups(status: "open" | "resolved") {
 
 export type ReportGroup = Awaited<ReturnType<typeof listReportGroups>>[number];
 
-function resolveReports(where: SQL | undefined, status: Exclude<ReportStatus, "open">, by: string) {
-  return db
+/**
+ * Cierra los reportes pendientes que cumplan `where`. Con `notify`, avisa por correo del resultado
+ * a quien dejó su correo y todavía no recibió respuesta (p. ej. una escrita a mano).
+ */
+async function resolveReports(
+  where: SQL | undefined,
+  status: Exclude<ReportStatus, "open">,
+  by: string,
+  notify: boolean,
+) {
+  const resolved = await db
     .update(report)
     .set({ status, resolvedAt: new Date(), resolvedBy: by })
-    .where(and(eq(report.status, "open"), where));
+    .where(and(eq(report.status, "open"), where))
+    .returning();
+  if (notify) await notifyReporters(resolved);
+}
+
+const localeOf = (r: Pick<Report, "locale">) => (isLocale(r.locale) ? r.locale : "es");
+
+/** Un correo por persona y link, aunque haya reportado el mismo link varias veces. */
+async function notifyReporters(reports: Report[]) {
+  const pending = new Map<string, Report>();
+  for (const r of reports) {
+    if (!r.reporterEmail || r.notifiedAt) continue;
+    pending.set(`${r.reporterEmail.toLowerCase()} ${r.slug}`, r);
+  }
+  if (pending.size === 0) return;
+
+  await db
+    .update(report)
+    .set({ notifiedAt: new Date() })
+    .where(inArray(report.id, reports.filter((r) => r.reporterEmail && !r.notifiedAt).map((r) => r.id)));
+
+  after(() =>
+    Promise.all(
+      [...pending.values()].map((r) => {
+        const t = dictionaries[localeOf(r)].email.report;
+        const shortLink = `${shortHost}/${r.slug}`;
+        return sendEmail({
+          to: r.reporterEmail!,
+          subject: t.subject,
+          ...simpleEmail({
+            intro: r.status === "disabled" ? t.disabled(shortLink) : t.dismissed(shortLink),
+            button: t.button,
+            url: `${baseUrl}/report`,
+            outro: t.outro,
+          }),
+          idempotencyKey: `report-resolved/${r.id}`,
+        }).catch((error) => console.error("No se pudo avisar a quien reportó", error));
+      }),
+    ),
+  );
+}
+
+/**
+ * Respuesta escrita a mano a quien reportó. Si contesta el correo, le llega a quien moderó.
+ * Después de esto ya no se le manda el aviso automático por ese reporte.
+ */
+export async function replyToReporter(reportId: string, message: string, by: string) {
+  const text = message.trim().slice(0, REPLY_MAX);
+  if (!text) return { ok: false, text: "Escribe la respuesta." };
+  const [r] = await db.select().from(report).where(eq(report.id, reportId));
+  if (!r?.reporterEmail) return { ok: false, text: "Este reporte no tiene correo." };
+
+  const t = dictionaries[localeOf(r)].email.report;
+  try {
+    await sendEmail({
+      to: r.reporterEmail,
+      subject: t.replySubject(`${shortHost}/${r.slug}`),
+      ...simpleEmail({ intro: text, outro: t.replyOutro }),
+      replyTo: by,
+      idempotencyKey: keyFor(`report-reply/${r.id}`, text),
+    });
+  } catch (error) {
+    console.error("No se pudo mandar la respuesta", error);
+    return { ok: false, text: "No se pudo mandar el correo. Intenta de nuevo." };
+  }
+  // Todos sus reportes de ese link quedan como respondidos, para no mandarle además el automático.
+  await db
+    .update(report)
+    .set({ notifiedAt: sql`coalesce(${report.notifiedAt}, now())`, reply: text })
+    .where(and(eq(report.slug, r.slug), sql`lower(${report.reporterEmail}) = lower(${r.reporterEmail})`));
+  return { ok: true, text: `Respuesta enviada a ${r.reporterEmail}.` };
 }
 
 /** Clave del grupo → condición sobre los reportes (por link, o por slug si el link ya se borró). */
@@ -140,17 +224,17 @@ const groupWhere = (key: string) =>
     ? and(isNull(report.linkId), eq(report.slug, key.slice(5)))
     : eq(report.linkId, key);
 
-export async function disableLink(linkId: string, by: string) {
+export async function disableLink(linkId: string, by: string, notify = true) {
   await db.update(link).set({ disabledAt: new Date() }).where(and(eq(link.id, linkId), isNull(link.disabledAt)));
-  await resolveReports(eq(report.linkId, linkId), "disabled", by);
+  await resolveReports(eq(report.linkId, linkId), "disabled", by, notify);
 }
 
 export async function enableLink(linkId: string) {
   await db.update(link).set({ disabledAt: null }).where(eq(link.id, linkId));
 }
 
-export async function dismissReports(key: string, by: string) {
-  await resolveReports(groupWhere(key), "dismissed", by);
+export async function dismissReports(key: string, by: string, notify = true) {
+  await resolveReports(groupWhere(key), "dismissed", by, notify);
 }
 
 /** Host de una URL en SQL (sin `www.`), para encontrar todos los links hacia un dominio. */
@@ -160,7 +244,7 @@ const hostOf = sql`lower(regexp_replace(substring(${link.url} from '^[a-zA-Z][a-
  * Bloquea un dominio y sus subdominios: no se pueden crear links hacia él y se desactivan
  * los que ya existen. Sus reportes pendientes quedan resueltos.
  */
-export async function blockDomain(domain: string, by: string, note?: string) {
+export async function blockDomain(domain: string, by: string, note?: string, notify = true) {
   const clean = domain.trim().toLowerCase().replace(/^www\./, "");
   if (!clean.includes(".")) return 0;
   await db.insert(blockedDomain).values({ domain: clean, note }).onConflictDoNothing();
@@ -170,7 +254,7 @@ export async function blockDomain(domain: string, by: string, note?: string) {
     .where(and(isNull(link.disabledAt), sql`(${hostOf} = ${clean} or ${hostOf} like ${"%." + clean})`))
     .returning({ id: link.id });
   if (disabled.length > 0) {
-    await resolveReports(inArray(report.linkId, disabled.map((l) => l.id)), "disabled", by);
+    await resolveReports(inArray(report.linkId, disabled.map((l) => l.id)), "disabled", by, notify);
   }
   return disabled.length;
 }

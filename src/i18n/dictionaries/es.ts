@@ -229,6 +229,16 @@ export const es = {
         intro: "Revisamos tu solicitud y por ahora no podemos darte una cuenta ilimitada. Tu cuenta sigue funcionando con el límite normal.",
       },
     },
+    report: {
+      subject: "Revisamos tu reporte",
+      disabled: (link: string) => `Gracias por avisarnos. Revisamos ${link} y lo desactivamos: ya no lleva a su destino.`,
+      dismissed: (link: string) =>
+        `Gracias por avisarnos. Revisamos ${link} y no encontramos un problema, así que sigue activo.`,
+      button: "Reportar otro link",
+      outro: "Si ves otro link sospechoso, puedes reportarlo cuando quieras.",
+      replySubject: (link: string) => `Sobre tu reporte de ${link}`,
+      replyOutro: "Puedes responder a este correo si quieres agregar algo.",
+    },
   },
   report: {
     text: "Si un link de cut. lleva a phishing, malware o spam, cuéntanos. Lo revisamos y, si hace falta, lo desactivamos.",
@@ -243,7 +253,7 @@ export const es = {
     },
     details: "Detalles (opcional)",
     detailsPlaceholder: "¿Dónde lo viste? ¿Qué pide la página?",
-    email: "Tu correo (opcional), por si necesitamos más datos",
+    email: "Tu correo (opcional), para avisarte del resultado",
     send: "Mandar reporte",
     sending: "Mandando…",
     sent: "Gracias. Revisaremos el link pronto.",

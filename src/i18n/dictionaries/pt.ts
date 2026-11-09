@@ -229,6 +229,16 @@ export const pt: Dictionary = {
         intro: "Revisamos seu pedido e, por enquanto, não podemos dar uma conta ilimitada. Sua conta continua funcionando com o limite normal.",
       },
     },
+    report: {
+      subject: "Revisamos sua denúncia",
+      disabled: (link: string) => `Obrigado por avisar. Revisamos ${link} e o desativamos: ele não leva mais ao destino.`,
+      dismissed: (link: string) =>
+        `Obrigado por avisar. Revisamos ${link} e não encontramos problema, então ele continua ativo.`,
+      button: "Denunciar outro link",
+      outro: "Se vir outro link suspeito, pode denunciar quando quiser.",
+      replySubject: (link: string) => `Sobre sua denúncia de ${link}`,
+      replyOutro: "Você pode responder a este email se quiser acrescentar algo.",
+    },
   },
   report: {
     text: "Se um link do cut. leva a phishing, malware ou spam, conte para a gente. Vamos revisar e, se precisar, desativar.",
@@ -243,7 +253,7 @@ export const pt: Dictionary = {
     },
     details: "Detalhes (opcional)",
     detailsPlaceholder: "Onde você viu? O que a página pede?",
-    email: "Seu email (opcional), caso precisemos de mais detalhes",
+    email: "Seu email (opcional), para avisarmos o resultado",
     send: "Enviar denúncia",
     sending: "Enviando…",
     sent: "Obrigado. Vamos revisar o link em breve.",

@@ -132,6 +132,11 @@ export const report = pgTable(
     reason: text("reason").$type<ReportReason>().notNull(),
     details: text("details"),
     reporterEmail: text("reporter_email"),
+    // Idioma de quien reportó, para avisarle del resultado en ese idioma.
+    locale: text("locale").notNull().default("es"),
+    // Cuándo se le avisó del resultado (automático o a mano) y, si fue a mano, qué se le escribió.
+    notifiedAt: timestamp("notified_at", { withTimezone: true }),
+    reply: text("reply"),
     // Hash de la IP, solo para limitar cuántos reportes manda alguien por hora.
     ipHash: text("ip_hash"),
     status: text("status").$type<ReportStatus>().notNull().default("open"),
