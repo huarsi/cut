@@ -9,7 +9,7 @@ import { authClient } from "@/lib/auth-client";
 import { THEME_SWATCHES, THEMES, type Theme } from "@/lib/theme";
 import { usePreferences, useT } from "./preferences";
 
-type User = { name: string; email: string } | null;
+type User = { name: string; email: string; admin: boolean } | null;
 
 /** Un solo botón en el header: navegación, tema, idioma y salir. */
 export function HeaderMenu({ user }: { user: User }) {
@@ -103,11 +103,22 @@ export function HeaderMenu({ user }: { user: User }) {
                   <MenuLink href="/dashboard/keys" onClick={close}>
                     {t.nav.keys}
                   </MenuLink>
+                  <MenuLink href="/dashboard/settings" onClick={close}>
+                    {t.nav.settings}
+                  </MenuLink>
                 </>
               )}
               <MenuLink href="/docs" onClick={close}>
                 {t.nav.docs}
               </MenuLink>
+              <MenuLink href="/report" onClick={close}>
+                {t.nav.report}
+              </MenuLink>
+              {user?.admin && (
+                <MenuLink href="/admin" onClick={close}>
+                  {t.nav.admin}
+                </MenuLink>
+              )}
             </nav>
 
             <Section title={t.nav.theme}>

@@ -3,6 +3,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/db";
 import { apiKey } from "@/db/schema";
+import { getT } from "@/i18n/server";
+import { KEY_NAME_MAX } from "@/lib/limits";
 
 const hash = (key: string) => createHash("sha256").update(key).digest("hex");
 
@@ -12,7 +14,7 @@ export async function createApiKey(userId: string, name: string) {
   await db.insert(apiKey).values({
     id: nanoid(),
     userId,
-    name: name.trim() || "Sin nombre",
+    name: name.trim().slice(0, KEY_NAME_MAX) || (await getT()).keys.unnamed,
     prefix: key.slice(0, 10),
     keyHash: hash(key),
   });

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Header } from "@/components/header";
 import { getT } from "@/i18n/server";
 import { enabledProviders, getSession } from "@/lib/auth";
+import { emailEnabled } from "@/lib/email";
 import { AuthForm } from "./auth-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,6 +25,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <AuthForm
             next={target}
             providers={enabledProviders}
+            canResetPassword={emailEnabled}
             initialMode={mode === "signup" ? "signup" : "signin"}
           />
         </div>

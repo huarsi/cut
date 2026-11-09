@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getT } from "@/i18n/server";
+import { isAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/auth";
 import { HeaderMenu } from "./header-menu";
 import { Logo } from "./logo";
@@ -9,6 +10,7 @@ export async function Header({ hideSignIn = false }: { hideSignIn?: boolean }) {
   const user = session && {
     name: session.user.displayUsername ?? session.user.name,
     email: session.user.email,
+    admin: isAdmin(session.user.email),
   };
 
   return (

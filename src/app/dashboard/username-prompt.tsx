@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useT } from "@/components/preferences";
 import { USERNAME_PATTERN, UsernameField } from "@/components/username-field";
 import { authClient } from "@/lib/auth-client";
+import { translateAuthError } from "../login/auth-form";
 
 /** Para cuentas creadas antes de que existieran los usuarios. */
 export function UsernamePrompt() {
@@ -20,7 +21,7 @@ export function UsernamePrompt() {
     setPending(true);
     const { error } = await authClient.updateUser({ username, displayUsername: username });
     setPending(false);
-    if (error) return setError(error.message ?? t.username.saveError);
+    if (error) return setError(translateAuthError(error, t.auth.errors));
     router.refresh();
   }
 

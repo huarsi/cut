@@ -14,10 +14,13 @@ type Status = "idle" | "checking" | "available" | "taken" | "invalid";
 export function UsernameField({
   value,
   onChange,
+  current,
   className = "",
 }: {
   value: string;
   onChange: (value: string) => void;
+  /** Usuario actual de la cuenta: no se marca como ocupado. */
+  current?: string | null;
   className?: string;
 }) {
   const t = useT();
@@ -25,7 +28,7 @@ export function UsernameField({
   const [checked, setChecked] = useState<{ value: string; available: boolean } | null>(null);
 
   useEffect(() => {
-    if (!USERNAME_PATTERN.test(value)) return;
+    if (!USERNAME_PATTERN.test(value) || value.toLowerCase() === current?.toLowerCase()) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       const { data } = await authClient.isUsernameAvailable({ username: value });
@@ -35,9 +38,10 @@ export function UsernameField({
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [value]);
+  }, [value, current]);
 
-  const status: Status = !value
+  const isCurrent = Boolean(current) && value.toLowerCase() === current!.toLowerCase();
+  const status: Status = !value || isCurrent
     ? "idle"
     : !USERNAME_PATTERN.test(value)
       ? "invalid"

@@ -59,3 +59,13 @@ export const Google = (p: Props) => (
     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.97 10.97 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z" />
   </svg>
 );
+export const Pencil = (p: Props) => (
+  <svg {...base} {...p}>
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+export const Cross = (p: Props) => (
+  <svg {...base} {...p}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);

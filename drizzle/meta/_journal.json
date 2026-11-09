@@ -15,6 +15,27 @@
       "when": 1792697355892,
       "tag": "0001_usernames_and_anon_links",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794248916779,
+      "tag": "0002_rate_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794250796542,
+      "tag": "0003_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794252377786,
+      "tag": "0004_unlimited_accounts",
+      "breakpoints": true
     }
   ]
 }

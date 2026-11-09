@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useActionState, useState } from "react";
 import type { CreateLinkState } from "@/lib/links";
+import { URL_MAX } from "@/lib/limits";
 import { ALIAS_MAX, SLUG_LENGTH } from "@/lib/slug";
 import { CopyButton } from "./copy-button";
 import { CutAnimation } from "./cut-animation";
@@ -18,9 +19,18 @@ type Props = {
   allowSlug?: boolean;
   defaultUrl?: string;
   autoFocus?: boolean;
+  /** Qué mostrar bajo el error cuando la cuenta llega a su límite (p. ej. pedir cuenta ilimitada). */
+  onLimit?: React.ReactNode;
 };
 
-export function CreateLinkForm({ action: createLink, host, allowSlug = false, defaultUrl = "", autoFocus = false }: Props) {
+export function CreateLinkForm({
+  action: createLink,
+  host,
+  allowSlug = false,
+  defaultUrl = "",
+  autoFocus = false,
+  onLimit,
+}: Props) {
   const t = useT();
   // URL y alias son controlados para conservar lo escrito si hay error y limpiarlos solo al tener éxito.
   const [url, setUrl] = useState(defaultUrl);
@@ -47,6 +57,7 @@ export function CreateLinkForm({ action: createLink, host, allowSlug = false, de
             required
             autoFocus={autoFocus}
             autoComplete="off"
+            maxLength={URL_MAX}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder={t.form.urlPlaceholder}
@@ -112,6 +123,7 @@ export function CreateLinkForm({ action: createLink, host, allowSlug = false, de
           </motion.p>
         )}
       </AnimatePresence>
+      {state && !state.ok && state.code === "userLimit" && onLimit && <div className="px-3 pt-1 pb-2">{onLimit}</div>}
 
       <AnimatePresence>
         {state?.ok && (

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useActionState } from "react";
 import { CopyButton } from "@/components/copy-button";
 import { useT } from "@/components/preferences";
+import { KEY_NAME_MAX } from "@/lib/limits";
 import { createKeyAction } from "../actions";
 
 export function CreateKeyForm() {
@@ -16,7 +17,7 @@ export function CreateKeyForm() {
         <input
           name="name"
           required
-          maxLength={60}
+          maxLength={KEY_NAME_MAX}
           autoComplete="off"
           placeholder={t.keys.namePlaceholder}
           className="input flex-1 border-transparent bg-transparent focus:border-line"

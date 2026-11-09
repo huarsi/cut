@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GitHub, Google } from "@/components/icons";
@@ -14,10 +15,13 @@ export type Mode = "signin" | "signup";
 export function AuthForm({
   next,
   providers,
+  canResetPassword,
   initialMode = "signin",
 }: {
   next: string;
   providers: { github: boolean; google: boolean };
+  /** Solo si hay cómo mandar el correo de recuperación. */
+  canResetPassword: boolean;
   initialMode?: Mode;
 }) {
   const t = useT();
@@ -39,7 +43,7 @@ export function AuthForm({
       : signIn(String(form.get("identifier")).trim(), password));
     setPending(false);
 
-    if (error) return setError(translateError(error.code, t.auth.errors));
+    if (error) return setError(translateAuthError(error, t.auth.errors));
     router.push(next);
     router.refresh();
   }
@@ -122,6 +126,14 @@ export function AuthForm({
         </button>
       </form>
 
+      {mode === "signin" && canResetPassword && (
+        <p className="mt-4 text-center">
+          <Link href="/forgot-password" className="text-sm text-muted transition hover:text-fg">
+            {t.auth.forgot}
+          </Link>
+        </p>
+      )}
+
       {(providers.github || providers.google) && (
         <>
           <div className="my-6 flex items-center gap-3 text-xs text-muted">
@@ -154,8 +166,13 @@ function signIn(identifier: string, password: string) {
     : authClient.signIn.username({ username: identifier, password });
 }
 
-function translateError(code: string | undefined, errors: Dictionary["auth"]["errors"]) {
-  switch (code) {
+/** Traduce los errores de Better Auth. También lo usan recuperar contraseña y la página de cuenta. */
+export function translateAuthError(
+  error: { code?: string; status?: number },
+  errors: Dictionary["auth"]["errors"],
+) {
+  if (error.status === 429) return errors.rateLimited;
+  switch (error.code) {
     case "INVALID_EMAIL_OR_PASSWORD":
     case "INVALID_USERNAME_OR_PASSWORD":
       return errors.invalidCredentials;
@@ -170,6 +187,11 @@ function translateError(code: string | undefined, errors: Dictionary["auth"]["er
       return errors.userExists;
     case "PASSWORD_TOO_SHORT":
       return errors.passwordShort;
+    case "INVALID_PASSWORD":
+      return errors.wrongPassword;
+    case "SESSION_EXPIRED":
+    case "SESSION_NOT_FRESH":
+      return errors.sessionExpired;
     default:
       return errors.generic;
   }

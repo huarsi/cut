@@ -9,12 +9,20 @@ import { getT } from "@/i18n/server";
 import { currentAnonId, listAnonLinks } from "@/lib/anon";
 import { getSession } from "@/lib/auth";
 import { shortHost, shortUrl } from "@/lib/links";
+import { ALIAS_PATTERN } from "@/lib/slug";
 import { createAnonLinkAction } from "./actions";
 
 export default async function Home({ searchParams }: PageProps<"/">) {
-  const { missing } = await searchParams;
+  const params = await searchParams;
+  // Solo se muestran slugs con formato válido, para que nadie pueda escribir texto en la página con la URL.
+  const slugParam = (key: "missing" | "blocked") => {
+    const value = params[key];
+    return typeof value === "string" && ALIAS_PATTERN.test(value) ? value : null;
+  };
+  const missing = slugParam("missing");
+  const blocked = slugParam("blocked");
   const session = await getSession();
-  if (session && !missing) redirect("/dashboard");
+  if (session && !missing && !blocked) redirect("/dashboard");
 
   const [t, anonId] = await Promise.all([getT(), currentAnonId()]);
   const anonLinks = anonId ? await listAnonLinks(anonId) : [];
@@ -23,9 +31,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     <>
       <Header />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center px-4 pt-16 pb-24 sm:px-6 sm:pt-28">
-        {typeof missing === "string" && (
+        {(missing || blocked) && (
           <p className="mb-8 rounded-full border border-line bg-card px-4 py-1.5 text-center text-sm text-muted">
-            <Rich text={t.home.missing(missing)} />
+            <Rich text={missing ? t.home.missing(missing) : t.home.blocked(blocked!)} />
           </p>
         )}
 
@@ -62,7 +70,9 @@ export default async function Home({ searchParams }: PageProps<"/">) {
                   shortUrl={shortUrl(l.slug)}
                   clicks={l.clicks}
                   createdAt={l.createdAt.toISOString()}
-                  deletable={false}
+                  lastClickedAt={l.lastClickedAt?.toISOString() ?? null}
+                  disabled={l.disabledAt !== null}
+                  manageable={false}
                 />
               ))}
             </ul>
@@ -80,7 +90,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
         </section>
       </main>
       <footer className="py-8 text-center text-sm text-muted">
-        cut<span className="text-accent">.</span> — {t.home.footer}
+        <p>
+          cut<span className="text-accent">.</span> — {t.home.footer}
+        </p>
+        <Link href="/report" className="mt-2 inline-block text-xs transition hover:text-fg">
+          {t.home.reportLink}
+        </Link>
       </footer>
     </>
   );

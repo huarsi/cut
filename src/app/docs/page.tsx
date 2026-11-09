@@ -42,7 +42,8 @@ export default async function DocsPage() {
   "url": "${d.exampleUrl}",
   "clicks": 0,
   "createdAt": "2026-10-21T18:00:00.000Z",
-  "lastClickedAt": null
+  "lastClickedAt": null,
+  "disabled": false
 }`}</Block>
         </Endpoint>
 
@@ -52,6 +53,13 @@ export default async function DocsPage() {
 
         <Endpoint method="GET" path="/links/:slug" title={d.get.title} body={d.get.body}>
           <Block>{`curl ${api}/links/k3Rp -H "Authorization: Bearer $CUT_API_KEY"`}</Block>
+        </Endpoint>
+
+        <Endpoint method="PATCH" path="/links/:slug" title={d.update.title} body={d.update.body}>
+          <Block>{`curl -X PATCH ${api}/links/k3Rp \\
+  -H "Authorization: Bearer $CUT_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"url": "https://example.com/v2"}'`}</Block>
         </Endpoint>
 
         <Endpoint method="DELETE" path="/links/:slug" title={d.remove.title} body={d.remove.body}>
@@ -93,6 +101,7 @@ const { shortUrl } = await res.json();`}</Block>
 const METHOD_COLORS: Record<string, string> = {
   GET: "bg-fg/5 text-fg",
   POST: "bg-accent/10 text-accent",
+  PATCH: "bg-accent/10 text-accent",
   DELETE: "bg-fg text-bg",
 };
 

@@ -17,12 +17,17 @@ export async function currentAnonId() {
   return token ? hash(token) : null;
 }
 
-/** Crea un link sin cuenta. Solo se puede llamar desde una server action (escribe cookies). */
-export async function createAnonLink(rawUrl: string, length: number) {
+/** Hash de la IP del visitante. No guardamos la IP, solo esto, para limitar abusos. */
+export async function currentIpHash() {
   const headerList = await headers();
   const ip =
     headerList.get("x-forwarded-for")?.split(",")[0].trim() ?? headerList.get("x-real-ip") ?? "local";
-  const ipHash = hash(`ip:${ip}`);
+  return hash(`ip:${ip}`);
+}
+
+/** Crea un link sin cuenta. Solo se puede llamar desde una server action (escribe cookies). */
+export async function createAnonLink(rawUrl: string, length: number) {
+  const ipHash = await currentIpHash();
 
   const [{ recent }] = await db
     .select({ recent: count() })

@@ -4,7 +4,7 @@ import { createLink, listLinks, serializeLink } from "@/lib/links";
 import { SLUG_LENGTH } from "@/lib/slug";
 
 const createSchema = z.object({
-  url: z.string().min(1).max(2048),
+  url: z.string().min(1),
   slug: z.string().optional().nullable(),
   length: z.number().int().min(SLUG_LENGTH.min).max(SLUG_LENGTH.max).optional(),
 });
