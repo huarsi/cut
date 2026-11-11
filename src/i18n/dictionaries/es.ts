@@ -144,7 +144,7 @@ export const es = {
     intro2: "y mándala en el header `Authorization: Bearer cut_…`.",
     create: {
       title: "Crear un link",
-      body: "Cuerpo JSON con `url` y, si quieres, `slug` (un alias de 3 a 100 caracteres: letras, números, `-` o `_`) o `length` (de 3 a 7 caracteres para el código aleatorio; 5 si no lo mandas). Responde `201`.",
+      body: "Cuerpo JSON con `url` y, si quieres, `slug` (un alias de 3 a 100 caracteres: letras, números, `-` o `_`) o `length` (de 3 a 7 caracteres para el código aleatorio; 5 si no lo mandas). Responde `201`. `shortUrl` es el link completo; `short` es el mismo sin `https://`, para mostrarlo o mandarlo en un mensaje.",
     },
     list: { title: "Listar tus links", body: "Del más nuevo al más viejo. Acepta `?limit=` (1–500, por defecto 50)." },
     get: { title: "Consultar un link", body: "Útil para leer sus clics. Solo cuentan las visitas de personas, no las de bots ni las vistas previas de los chats." },

@@ -4,7 +4,7 @@ import { CopyButton } from "@/components/copy-button";
 import { Header } from "@/components/header";
 import { Rich } from "@/components/rich";
 import { getT } from "@/i18n/server";
-import { baseUrl } from "@/lib/links";
+import { baseUrl, shortHost } from "@/lib/links";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT()).meta.docs };
@@ -39,6 +39,7 @@ export default async function DocsPage() {
           <Block>{`{
   "slug": "k3Rp",
   "shortUrl": "${baseUrl}/k3Rp",
+  "short": "${shortHost}/k3Rp",
   "url": "${d.exampleUrl}",
   "clicks": 0,
   "createdAt": "2026-10-21T18:00:00.000Z",

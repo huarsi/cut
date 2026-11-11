@@ -17,6 +17,8 @@ export const baseUrl = (
 
 export const shortUrl = (slug: string) => `${baseUrl}/${slug}`;
 export const shortHost = new URL(baseUrl).host;
+// Sin protocolo, para mostrarlo o mandarlo en un mensaje ("cut.lat/k3Rp").
+export const shortText = (slug: string) => `${shortHost}/${slug}`;
 
 // Rutas de la app: un slug con estos nombres nunca se podría visitar.
 const RESERVED = new Set([
@@ -181,6 +183,7 @@ export async function deleteLink(userId: string, slug: string) {
 export const serializeLink = (l: Link) => ({
   slug: l.slug,
   shortUrl: shortUrl(l.slug),
+  short: shortText(l.slug),
   url: l.url,
   clicks: l.clicks,
   createdAt: l.createdAt.toISOString(),

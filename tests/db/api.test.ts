@@ -29,7 +29,10 @@ describe("API /api/v1/links", () => {
 
     const created = await createRoute(call(key, "POST", "", { url: "example.com", slug: "api-1" }), {} as never);
     expect(created.status).toBe(201);
-    expect(await created.json()).toMatchObject({ slug: "api-1", url: "https://example.com/", disabled: false });
+    const body = await created.json();
+    expect(body).toMatchObject({ slug: "api-1", url: "https://example.com/", disabled: false });
+    expect(body.shortUrl).toMatch(/^https?:\/\/.+\/api-1$/);
+    expect(body.short).toBe(body.shortUrl.replace(/^https?:\/\//, ""));
 
     const patched = await patchRoute(call(key, "PATCH", "/api-1", { url: "example.org" }), ctx("api-1") as never);
     expect((await patched.json()).url).toBe("https://example.org/");

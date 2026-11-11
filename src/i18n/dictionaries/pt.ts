@@ -144,7 +144,7 @@ export const pt: Dictionary = {
     intro2: "e envie-a no header `Authorization: Bearer cut_…`.",
     create: {
       title: "Criar um link",
-      body: "Corpo JSON com `url` e, se quiser, `slug` (um apelido de 3 a 100 caracteres: letras, números, `-` ou `_`) ou `length` (de 3 a 7 caracteres para o código aleatório; 5 se não for enviado). Responde `201`.",
+      body: "Corpo JSON com `url` e, se quiser, `slug` (um apelido de 3 a 100 caracteres: letras, números, `-` ou `_`) ou `length` (de 3 a 7 caracteres para o código aleatório; 5 se não for enviado). Responde `201`. `shortUrl` é o link completo; `short` é o mesmo sem `https://`, para mostrá-lo ou enviá-lo numa mensagem.",
     },
     list: { title: "Listar seus links", body: "Do mais novo ao mais antigo. Aceita `?limit=` (1–500, padrão 50)." },
     get: { title: "Consultar um link", body: "Útil para ler seus cliques. Só contam visitas de pessoas, não de bots nem prévias de links dos chats." },

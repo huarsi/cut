@@ -91,6 +91,8 @@ curl -X POST https://cut.lat/api/v1/links \
 | `PATCH` | `/api/v1/links/:slug` | Cambia el destino (`url`); conserva slug y clics |
 | `DELETE` | `/api/v1/links/:slug` | Borra un link |
 
+Cada link viene con `shortUrl` (`https://cut.lat/promo`, para usarlo como link) y `short` (`cut.lat/promo`, para mostrarlo o mandarlo en un mensaje).
+
 Si la cuenta llega a su límite, responde `429`.
 
 ## Estructura

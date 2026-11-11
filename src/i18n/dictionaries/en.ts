@@ -144,7 +144,7 @@ export const en: Dictionary = {
     intro2: "and send it in the `Authorization: Bearer cut_…` header.",
     create: {
       title: "Create a link",
-      body: "JSON body with `url` and, optionally, `slug` (an alias of 3 to 100 characters: letters, numbers, `-` or `_`) or `length` (3 to 7 characters for the random code; 5 if omitted). Responds `201`.",
+      body: "JSON body with `url` and, optionally, `slug` (an alias of 3 to 100 characters: letters, numbers, `-` or `_`) or `length` (3 to 7 characters for the random code; 5 if omitted). Responds `201`. `shortUrl` is the full link; `short` is the same without `https://`, for displaying it or sending it in a message.",
     },
     list: { title: "List your links", body: "Newest first. Accepts `?limit=` (1–500, default 50)." },
     get: { title: "Get a link", body: "Useful to read its clicks. Only visits from people count, not bots or chat link previews." },
